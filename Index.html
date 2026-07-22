@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#050508" />
+  <title>AETHER — Exoplanetary Habitability Engine</title>
+  <link rel="stylesheet" href="css/app.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+</head>
+<body>
+
+  <!-- =========================== 3D VIEWPORT =========================== -->
+  <div id="webgl-viewport" aria-hidden="true"></div>
+  <div id="starfield" aria-hidden="true"></div>
+
+  <!-- =========================== APP BAR =========================== -->
+  <header class="app-bar" role="banner">
+    <div class="app-bar__left">
+      <h1 class="wordmark">A&nbsp;E&nbsp;T&nbsp;H&nbsp;E&nbsp;R</h1>
+      <span class="status-pill status-pill--ok" title="On-device core engine">
+        <span class="dot"></span>
+        ON-DEVICE CORE ENGINE
+      </span>
+    </div>
+
+    <nav class="mode-pills" aria-label="Target mode selection">
+      <button class="mode-pill mode-pill--active" data-mode="astrobiology" type="button">
+        <span class="mode-pill__swatch mode-pill__swatch--cyan"></span>
+        Astrobiology
+      </button>
+      <button class="mode-pill" data-mode="geophysics" type="button">
+        <span class="mode-pill__swatch mode-pill__swatch--rust"></span>
+        Planetary Geophysics
+      </button>
+    </nav>
+
+    <div class="app-bar__right">
+      <span class="fps-pill" id="fps-pill" title="WebGL render status">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 12h4M12 10v4M16 12h2"/></svg>
+        <span>GPU:<b id="fps-readout">60</b></span>
+      </span>
+
+      <button class="utility-btn" id="btn-telemetry" type="button" aria-pressed="false" title="Toggle telemetry density">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 14l4-4 4 4 5-5"/></svg>
+        <span class="utility-btn__label">Telemetry</span>
+      </button>
+
+      <button class="utility-btn" id="btn-catalog" type="button" aria-label="Open astro catalog">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      </button>
+
+      <button class="utility-btn" id="btn-whitepaper" type="button" aria-label="Open equations reference">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h12a3 3 0 0 1 3 3v13H7a3 3 0 0 1-3-3z"/><path d="M4 17a3 3 0 0 1 3-3h12"/><path d="M8 8h6M8 12h4"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- =========================== SPLIT PANE WORKSPACE =========================== -->
+  <main class="workspace">
+
+    <!-- LEFT: VISUAL ENGINE -->
+    <section class="visual-engine" aria-label="Planetary visualizer">
+      <!-- Reticle -->
+      <div class="reticle" id="reticle" title="Inspect planet">
+        <svg width="88" height="88" viewBox="0 0 88 88" fill="none">
+          <circle cx="44" cy="44" r="42" stroke="currentColor" stroke-opacity="0.5" stroke-width="1" stroke-dasharray="2 4"/>
+          <circle cx="44" cy="44" r="22" stroke="currentColor" stroke-opacity="0.7" stroke-width="1"/>
+          <circle cx="44" cy="44" r="2.5" fill="currentColor"/>
+          <path d="M44 2v10M44 76v10M2 44h10M76 44h10" stroke="currentColor" stroke-width="1"/>
+        </svg>
+        <div class="reticle-tooltip" id="reticle-tooltip">
+          <div class="rt-row"><span>Surface gravity</span><b id="rt-g">1.00 G</b></div>
+          <div class="rt-row"><span>Solar flux</span><b id="rt-s">1.00 S<sub>⊕</sub></b></div>
+          <div class="rt-row"><span>Surface T</span><b id="rt-t">288 K</b></div>
+        </div>
+      </div>
+
+      <!-- Waveform oscilloscope -->
+      <div class="oscope" aria-label="Audio waveform">
+        <canvas id="oscope-canvas" width="280" height="72"></canvas>
+        <span class="oscope__label">SONIFICATION • <i id="oscope-freq">A0</i></span>
+      </div>
+
+      <!-- Ambient HUD text (top-left inside canvas) -->
+      <div class="hud-hint">
+        <div class="hud-hint__row"><span class="hud-key">MODE</span><span class="hud-val" id="hud-mode">ASTROBIOLOGY</span></div>
+        <div class="hud-hint__row"><span class="hud-key">TARGET</span><span class="hud-val" id="hud-target">EARTH SYSTEM</span></div>
+        <div class="hud-hint__row"><span class="hud-key">STATUS</span><span class="hud-val hud-val--cyan" id="hud-status">STABLE LIQUID OCEANS</span></div>
+      </div>
+    </section>
+
+    <!-- RIGHT: CONTROL PANEL -->
+    <aside class="control-panel" aria-label="Simulation controls">
+      <nav class="tab-bar" role="tablist">
+        <button class="tab tab--active" data-tab="stellar" role="tab" aria-selected="true" type="button">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+          Stellar
+        </button>
+        <button class="tab" data-tab="planetary" role="tab" type="button">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12c3-3 6 3 9 0s6-3 9 0"/></svg>
+          Planetary
+        </button>
+        <button class="tab" data-tab="metrics" role="tab" type="button">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15l3-3 3 3 5-6"/></svg>
+          Metrics
+        </button>
+        <button class="tab" data-tab="devices" role="tab" type="button">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2" width="12" height="20" rx="2"/><path d="M11 18h2"/></svg>
+          Devices
+        </button>
+      </nav>
+
+      <div class="tab-body">
+        <!-- ===== TAB: STELLAR ===== -->
+        <section class="tab-panel tab-panel--active" data-panel="stellar">
+          <div class="card">
+            <div class="card__head">
+              <h3>System Stellar Presets</h3>
+              <span class="card__sub">Main-sequence classification</span>
+            </div>
+            <div class="preset-row">
+              <button class="chip" data-stellar-preset="M" type="button">M-Dwarf</button>
+              <button class="chip" data-stellar-preset="K" type="button">K-Dwarf</button>
+              <button class="chip chip--active" data-stellar-preset="G" type="button">G-Yellow</button>
+              <button class="chip" data-stellar-preset="F" type="button">F-White</button>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card__head">
+              <h3>Effective Stellar Temperature</h3>
+              <span class="card__sub">T<sub>eff</sub> · Blackbody peak</span>
+            </div>
+              <div class="slider-block">
+                <div class="slider-block__row">
+                  <input type="range" id="s-teff" min="2500" max="10000" step="50" value="5780" />
+                  <div class="num-badge" data-for="s-teff" data-unit=" K">5780</div>
+                </div>
+              <!-- mini blackbody curve -->
+              <svg class="spectrum" id="spectrum-curve" viewBox="0 0 300 60" preserveAspectRatio="none">
+                <defs>
+                  <linearGradient id="spec-grad" x1="0" x2="1">
+                    <stop offset="0%" stop-color="#ff3b00"/>
+                    <stop offset="35%" stop-color="#ffd24a"/>
+                    <stop offset="60%" stop-color="#e0e0fa"/>
+                    <stop offset="100%" stop-color="#6aa8ff"/>
+                  </linearGradient>
+                </defs>
+                <path id="spectrum-path" d="M0,60 C60,60 90,10 150,10 C210,10 240,60 300,60 Z" fill="url(#spec-grad)" fill-opacity="0.35"/>
+                <path id="spectrum-line" d="M0,60 C60,60 90,10 150,10 C210,10 240,60 300,60" stroke="url(#spec-grad)" stroke-width="1.5" fill="none"/>
+              </svg>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card__head">
+              <h3>Stellar Radius</h3>
+              <span class="card__sub">R<sub>★</sub> · vs. Sun</span>
+            </div>
+            <div class="slider-block">
+              <div class="slider-block__row">
+                <input type="range" id="s-rstar" min="0.10" max="3.00" step="0.01" value="1.00" />
+                <div class="num-badge" data-for="s-rstar" data-unit=" R☉">1.00</div>
+              </div>
+              <!-- star/sun comparison -->
+              <div class="star-compare">
+                <div class="star-compare__sun" title="Sun (1.00 R☉)">
+                  <span>SUN</span>
+                </div>
+                <div class="star-compare__target" id="star-target" title="Target star">
+                  <span id="star-target-label">TARGET</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card card--readout">
+        <div class="card__head">
+          <div>
+            <h3>System Lifecycle</h3>
+            <span class="card__sub casual-hint">Main-sequence lifetime estimate</span>
+          </div>
+          <span class="card__sub" id="r-lifecycle">10.0 Gyr</span>
+        </div>
+        <div class="readout-grid">
+          <div class="readout">
+            <span class="readout__label">Luminosity <span class="formula-inline">· σT⁴·4πR²</span></span>
+            <span class="readout__value" id="r-lum">1.00 <i>L<sub>☉</sub></i></span>
+          </div>
+          <div class="readout">
+            <span class="readout__label">Lifecycle <span class="formula-inline">· τ∝M/L</span></span>
+            <span class="readout__value" id="r-lifecycle-state">Active</span>
+          </div>
+          <div class="readout">
+            <span class="readout__label">Stellar Wind</span>
+            <span class="readout__value" id="r-wind"><span class="chip-status chip-status--cyan">LOW</span></span>
+          </div>
+          <div class="readout">
+            <span class="readout__label">Habitable Zone <span class="formula-inline">· Kopparapu</span></span>
+            <span class="readout__value" id="r-hz">0.82 – 1.64 AU</span>
+          </div>
+        </div>
+          </div>
+        </section>
+
+        <!-- ===== TAB: PLANETARY ===== -->
+        <section class="tab-panel" data-panel="planetary">
+          <div class="card">
+            <div class="card__head">
+              <div>
+                <h3>Orbital Distance</h3>
+                <span class="card__sub casual-hint">How far the planet orbits from its star</span>
+              </div>
+              <span class="card__sub">Semi-major axis (d)</span>
+            </div>
+            <div class="slider-block">
+              <div class="slider-block__row">
+                <input type="range" id="p-distance" min="0.05" max="5.00" step="0.01" value="1.00" />
+                <div class="num-badge" data-for="p-distance" data-unit=" AU" id="badge-p-distance">1.00</div>
+              </div>
+              <div class="unit-toggle" role="group" aria-label="Distance units">
+                <button class="unit-toggle__btn unit-toggle__btn--active" data-unit="AU" type="button">AU</button>
+                <button class="unit-toggle__btn" data-unit="KM" type="button">km</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card__head">
+              <div>
+                <h3>Planetary Bulk Radius</h3>
+                <span class="card__sub casual-hint">Size of the world, edge to edge</span>
+              </div>
+              <span class="card__sub">R<sub>p</sub> · cross-section</span>
+            </div>
+            <div class="slider-block">
+              <div class="slider-block__row">
+                <input type="range" id="p-radius" min="0.10" max="3.00" step="0.01" value="1.00" />
+                <div class="num-badge" data-for="p-radius" data-unit=" R⊕">1.00</div>
+              </div>
+              <div class="planet-cross">
+                <div class="planet-cross__earth"><span>Earth</span></div>
+                <div class="planet-cross__target" id="planet-cross-target"><span>Target</span></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card__head">
+              <div>
+                <h3>Planetary Core Mass</h3>
+                <span class="card__sub casual-hint">How much rock, metal &amp; ice the world holds</span>
+              </div>
+              <span class="card__sub">M<sub>p</sub> · density preset</span>
+            </div>
+            <div class="slider-block">
+              <div class="slider-block__row">
+                <input type="range" id="p-mass" min="0.05" max="20.00" step="0.05" value="1.00" />
+                <div class="num-badge" data-for="p-mass" data-unit=" M⊕">1.00</div>
+              </div>
+              <div class="preset-row">
+                <button class="chip" data-core="iron" type="button">Iron Core</button>
+                <button class="chip chip--active" data-core="silicate" type="button">Silicate Rocky</button>
+                <button class="chip" data-core="water" type="button">Water-World</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card__head">
+              <div>
+                <h3>Bond Albedo</h3>
+                <span class="card__sub casual-hint">Cloud &amp; ice reflectiveness</span>
+              </div>
+              <span class="card__sub">A · reflectivity</span>
+            </div>
+            <div class="slider-block">
+              <div class="slider-block__row">
+                <input type="range" id="p-albedo" min="0.00" max="0.95" step="0.01" value="0.30" />
+                <div class="num-badge" data-for="p-albedo" data-unit="" id="badge-p-albedo">0.30</div>
+              </div>
+              <div class="marker-track" id="albedo-markers">
+                <span style="left:12.6%"><i>0.12 Basalt</i></span>
+                <span style="left:31.5%" class="marker-track__active"><i>0.30 Earth</i></span>
+                <span style="left:78.9%"><i>0.75 Venus Clouds</i></span>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card__head">
+              <div>
+                <h3>Greenhouse Optical Depth</h3>
+                <span class="card__sub casual-hint">How much heat the atmosphere traps</span>
+              </div>
+              <span class="card__sub">τ<sub>s</sub> · 1D grey-atmosphere</span>
+            </div>
+            <div class="slider-block">
+              <div class="slider-block__row">
+                <input type="range" id="p-tau" min="0.00" max="15.00" step="0.01" value="1.50" />
+                <div class="num-badge" data-for="p-tau" data-unit="" id="badge-p-tau">1.50</div>
+              </div>
+              <div class="climate-badge" id="climate-badge">
+                <span class="climate-badge__dot climate-badge__dot--cyan"></span>
+                <b>Liquid Stable Oceans</b>
+                <i>τ within temperate window</i>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ===== TAB: METRICS ===== -->
+        <section class="tab-panel" data-panel="metrics">
+          <div class="card">
+            <div class="card__head">
+              <h3>Similarity Index Compass</h3>
+              <span class="card__sub">Geometric mean · ESI / MSI / VSI</span>
+            </div>
+            <div class="similarity-grid">
+              <div class="sim-card sim-card--cyan">
+                <div class="sim-card__label">Earth Similarity</div>
+                <div class="sim-card__ring">
+                  <svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="42" class="ring-track"/><circle cx="50" cy="50" r="42" class="ring-fill" id="esi-ring"/></svg>
+                  <div class="sim-card__val" id="val-esi">0.000</div>
+                </div>
+                <div class="sim-card__meta">ESI</div>
+              </div>
+              <div class="sim-card sim-card--rust">
+                <div class="sim-card__label">Mars Similarity</div>
+                <div class="sim-card__ring">
+                  <svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="42" class="ring-track"/><circle cx="50" cy="50" r="42" class="ring-fill" id="msi-ring"/></svg>
+                  <div class="sim-card__val" id="val-msi">0.000</div>
+                </div>
+                <div class="sim-card__meta">MSI</div>
+              </div>
+              <div class="sim-card sim-card--gold">
+                <div class="sim-card__label">Venus Similarity</div>
+                <div class="sim-card__ring">
+                  <svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="42" class="ring-track"/><circle cx="50" cy="50" r="42" class="ring-fill" id="vsi-ring"/></svg>
+                  <div class="sim-card__val" id="val-vsi">0.000</div>
+                </div>
+                <div class="sim-card__meta">VSI</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card__head">
+              <h3>Kopparapu Circumstellar Habitable Zone</h3>
+              <span class="card__sub">Spatial flux boundaries · 1 M⊕</span>
+            </div>
+            <div class="hz-bar">
+              <div class="hz-bar__track">
+                <div class="hz-zone hz-zone--fire"><span>Stellar Fire</span></div>
+                <div class="hz-zone hz-zone--opt"><span>Optimistic HZ</span></div>
+                <div class="hz-zone hz-zone--cons"><span>Conservative HZ</span></div>
+                <div class="hz-zone hz-zone--ice"><span>Ice Boundary</span></div>
+        <div class="hz-marker" id="hz-marker-rv" data-label="Recent Venus"></div>
+        <div class="hz-marker hz-marker--inner" id="hz-marker-rg" data-label="Runaway Greenhouse"></div>
+        <div class="hz-marker hz-marker--outer" id="hz-marker-mg" data-label="Maximum Greenhouse"></div>
+        <div class="hz-marker" id="hz-marker-em" data-label="Early Mars"></div>
+                <div class="hz-target" id="hz-target" title="Selected orbit">
+                  <div class="hz-target__pin"></div>
+                  <div class="hz-target__label" id="hz-target-label">1.00 AU</div>
+                </div>
+              </div>
+              <div class="hz-axis">
+                <span>Inner Orbit</span>
+                <span id="hz-status" class="hz-status">Stable Liquid Water Zone</span>
+                <span>Outer Orbit</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="card card--readout">
+            <div class="card__head">
+              <h3>Integrated Mass Derivatives</h3>
+              <span class="card__sub">Derived at client tick</span>
+            </div>
+            <div class="kv-list">
+              <div class="kv"><span>Computed Bulk Density</span><b id="v-density">5.51 g/cm³</b><i>1.00 ρ<sub>⊕</sub></i></div>
+              <div class="kv"><span>Escape Velocity</span><b id="v-vesc">11.2 km/s</b><i>1.00 v<sub>⊕</sub></i></div>
+              <div class="kv"><span>Surface Gravity</span><b id="v-grav">1.00 G</b><i>9.81 m/s²</i></div>
+              <div class="kv"><span>Eq. Temperature</span><b id="v-teq">255 K</b><i>Bond albedo bound</i></div>
+              <div class="kv"><span>Surface Temperature</span><b id="v-tsurf" class="kv--cyan">288 K</b><i>τ-corrected</i></div>
+            </div>
+          </div>
+
+          <div class="card card--compare sci-only">
+            <div class="card__head">
+              <h3>Solar-System Comparative Frame</h3>
+              <span class="card__sub">Telemetry reference · Earth / Mars / Venus</span>
+            </div>
+            <div class="compare-table" role="table" aria-label="Solar system comparison">
+              <div class="compare-table__head" role="row">
+                <span role="columnheader">Body</span>
+                <span role="columnheader">R<sub>p</sub></span>
+                <span role="columnheader">ρ</span>
+                <span role="columnheader">v<sub>e</sub></span>
+                <span role="columnheader">g</span>
+                <span role="columnheader">T<sub>s</sub></span>
+                <span role="columnheader">SI</span>
+              </div>
+              <div class="compare-row" id="cmp-target" role="row">
+                <span class="compare-row__name" style="color:var(--cyan)">TARGET</span>
+                <span id="cmp-t-r">1.00 R⊕</span>
+                <span id="cmp-t-rho">1.00 ρ⊕</span>
+                <span id="cmp-t-v">1.00 v⊕</span>
+                <span id="cmp-t-g">1.00 G</span>
+                <span id="cmp-t-t">288 K</span>
+                <span id="cmp-t-si" class="kv--cyan">1.000</span>
+              </div>
+              <div class="compare-row" role="row">
+                <span class="compare-row__name" style="color:#6aa8ff">Earth</span><span>1.00 R⊕</span><span>1.00 ρ⊕</span><span>1.00 v⊕</span><span>1.00 G</span><span>288 K</span><span class="kv--cyan" id="cmp-earth-si">1.000</span>
+              </div>
+              <div class="compare-row" role="row">
+                <span class="compare-row__name" style="color:var(--rust)">Mars</span><span>0.53 R⊕</span><span>0.71 ρ⊕</span><span>0.45 v⊕</span><span>0.38 G</span><span>240 K</span><span class="kv--gold" id="cmp-mars-si">0.000</span>
+              </div>
+              <div class="compare-row" role="row">
+                <span class="compare-row__name" style="color:var(--gold)">Venus</span><span>0.95 R⊕</span><span>0.95 ρ⊕</span><span>0.93 v⊕</span><span>0.91 G</span><span>737 K</span><span id="cmp-venus-si">0.000</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ===== TAB: DEVICES ===== -->
+        <section class="tab-panel" data-panel="devices">
+          <div class="card">
+            <div class="card__head">
+              <h3>Mobile Hardware Access Gateway</h3>
+              <span class="card__sub">Sensor fusion · iOS-compatible consent</span>
+            </div>
+            <div class="twin-actions">
+              <button class="action-btn" id="btn-gyro" type="button">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2"/></svg>
+                <span>Enable Gyroscope</span>
+                <i id="gyro-status">Off</i>
+              </button>
+              <button class="action-btn" id="btn-mic" type="button">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0014 0M12 18v3"/></svg>
+                <span>Trigger Mic Test</span>
+                <i id="mic-status">Idle</i>
+              </button>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card__head">
+              <h3>Web Audio Acoustic Sonifier</h3>
+              <span class="card__sub">Atmospheric FM synthesis</span>
+            </div>
+            <div class="sonifier">
+              <button class="toggle-row" id="btn-audio" type="button" aria-pressed="false">
+                <span class="toggle-row__label">Master Audio Synthesizer</span>
+                <span class="toggle-switch"><span class="toggle-switch__knob"></span></span>
+                <span class="toggle-row__state" id="audio-state">INACTIVE</span>
+              </button>
+              <!-- larger oscilloscope -->
+              <canvas id="oscope-big" class="oscope-big" width="560" height="120"></canvas>
+              <div class="sonifier__meta">
+                <span>Baseline pitch: <b id="son-pitch">A2</b></span>
+                <span>LPF cutoff: <b id="son-lpf">1.4 kHz</b></span>
+                <span>τ drive: <b id="son-tau">1.50</b></span>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card__head">
+              <h3>Integrated Environmental Telemetry</h3>
+              <span class="card__sub">UX preferences</span>
+            </div>
+            <div class="toggle-list">
+              <button class="toggle-row" data-toggle="night" type="button" aria-pressed="false">
+                <span class="toggle-row__label">High-Contrast Night-Sky Mode</span>
+                <span class="toggle-switch"><span class="toggle-switch__knob"></span></span>
+                <span class="toggle-row__state">OFF</span>
+              </button>
+              <button class="toggle-row toggle-row--active" data-toggle="haptics" type="button" aria-pressed="true">
+                <span class="toggle-row__label">Haptic Surface Boundary Warnings</span>
+                <span class="toggle-switch toggle-switch--on"><span class="toggle-switch__knob"></span></span>
+                <span class="toggle-row__state">ON</span>
+              </button>
+            </div>
+          </div>
+        </section>
+      </div>
+    </aside>
+  </main>
+
+  <!-- =========================== BOTTOM PRESETS DRAWER =========================== -->
+  <section class="preset-drawer" id="preset-drawer" aria-label="System presets">
+    <button class="drawer-handle" id="drawer-handle" aria-label="Toggle preset drawer" type="button"><span></span></button>
+    <div class="drawer-head">
+      <h4>NASA Preset Benchmarks</h4>
+      <span class="drawer-head__sub" id="drawer-sub">Solar system &amp; Kepler candidates</span>
+    </div>
+    <div class="drawer-carousel" id="drawer-carousel">
+      <!-- cards injected by JS for ordering + data binding -->
+    </div>
+  </section>
+
+  <!-- =========================== OVERLAY: ASTRO CATALOG =========================== -->
+  <aside class="overlay" id="overlay-catalog" aria-hidden="true">
+    <div class="overlay__backdrop" data-close="catalog"></div>
+    <div class="overlay__panel">
+      <div class="overlay__head">
+        <h3>Real-World System Catalog</h3>
+        <button class="overlay__close" data-close="catalog" type="button" aria-label="Close">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <p class="overlay__sub">Click any system to load measured scientific parameters into the simulator.</p>
+      <div class="catalog-list" id="catalog-list"></div>
+    </div>
+  </aside>
+
+  <!-- =========================== OVERLAY: WHITEPAPER =========================== -->
+  <aside class="overlay overlay--right" id="overlay-whitepaper" aria-hidden="true">
+    <div class="overlay__backdrop" data-close="whitepaper"></div>
+    <div class="overlay__panel">
+      <div class="overlay__head">
+        <h3>The Mathematical Core of AETHER</h3>
+        <button class="overlay__close" data-close="whitepaper" type="button" aria-label="Close">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <p class="overlay__sub">Client-side radiative transfer &amp; similarity indexing.</p>
+      <div class="equation-list">
+        <div class="eq">
+          <div class="eq__num">01</div>
+          <div class="eq__body">
+            <h5>Equilibrium Thermal Gradient</h5>
+            <p class="formula">T<sub>eq</sub> = T<sub>★</sub> · √( R<sub>★</sub> / 2d ) · (1 − A)<sup>¼</sup></p>
+            <p class="eq__desc">Bond albedo-bound blackbody equilibrium at orbital distance d, before optical-depth correction.</p>
+          </div>
+        </div>
+        <div class="eq">
+          <div class="eq__num">02</div>
+          <div class="eq__body">
+            <h5>Eddington Approximation — Surface Temperature</h5>
+            <p class="formula">T<sub>s</sub><sup>4</sup> = (¾) T<sub>eq</sub><sup>4</sup> · ( τ<sub>s</sub> + ⅔ )</p>
+            <p class="eq__desc">Plane-parallel grey atmosphere with Hopf function q(τ) ≈ ⅔. Enables runaway greenhouse transitions.</p>
+          </div>
+        </div>
+        <div class="eq">
+          <div class="eq__num">03</div>
+          <div class="eq__body">
+            <h5>Bulk Density &amp; Escape Velocity</h5>
+            <p class="formula">ρ = M<sub>p</sub> / (4/3 π R<sub>p</sub>³) &nbsp;&nbsp; v<sub>e</sub> = √(2GM<sub>p</sub>/R<sub>p</sub>)</p>
+            <p class="eq__desc">Derived from mass-radius inputs; core-material preset scales effective density.</p>
+          </div>
+        </div>
+        <div class="eq">
+          <div class="eq__num">04</div>
+          <div class="eq__body">
+            <h5>Geometric-Mean Similarity Index</h5>
+            <p class="formula">SI = ( S<sub>R</sub> · S<sub>ρ</sub> · S<sub>v</sub> · S<sub>T</sub> )<sup>¼</sup></p>
+            <p class="eq__desc">Multi-class weighting against Earth, Mars and Venus baselines per Schulze-Makuch / Kopparapu conventions.</p>
+          </div>
+        </div>
+        <div class="eq">
+          <div class="eq__num">05</div>
+          <div class="eq__body">
+            <h5>Kopparapu Effective Stellar Flux</h5>
+            <p class="formula">S<sub>eff</sub> = S<sub>eff☉</sub> + aT<sub>★</sub> + bT<sub>★</sub>² + cT<sub>★</sub>³ + dT<sub>★</sub>⁴</p>
+            <p class="eq__desc">4th-order polynomial boundaries (Recent Venus → Early Mars) evaluated per 1 M⊕ benchmark.</p>
+          </div>
+        </div>
+      </div>
+      <div class="cite">
+        <b>Citations</b>
+        <span>Kopparapu et al. (2013) · Schulze-Makuch et al. (2011) · Kaltenegger &amp; Sasselov</span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- =========================== PERMISSION DIALOG =========================== -->
+  <div class="dialog" id="dialog-sensor" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="dialog-title">
+    <div class="dialog__panel">
+      <div class="dialog__icon">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/></svg>
+      </div>
+      <h3 id="dialog-title">Gyroscopic Telemetry Link</h3>
+      <p>AETHER requires access to your device-orientation sensors to align the 3D camera with your phone's tilt. iOS requires this over a secure (HTTPS) connection.</p>
+      <p class="dialog__status" id="dialog-status">Status: <b style="color:var(--cosmic)">PROMPT</b></p>
+      <div class="dialog__actions">
+        <button class="btn btn--ghost" id="dialog-dismiss" type="button">Dismiss Camera</button>
+        <button class="btn btn--primary" id="dialog-authorize" type="button">Authorize Sensors</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Three.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
