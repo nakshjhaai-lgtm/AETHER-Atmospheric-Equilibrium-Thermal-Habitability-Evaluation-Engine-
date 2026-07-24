@@ -1,6 +1,8 @@
  AETHER (Atmospheric Equilibrium & Thermal Habitability Evaluation Engine)
 
-Try It Here:- aetherplanetary.netlify.app 
+
+Try It Here:- https://aetherplanetary.netlify.app/ 
+
 
 ## 1. The Big Picture (Project Overview)
 AETHER is a web-based, interactive planetary physics simulator that lets users build and evaluate the habitability of alien worlds in real time. Think of it as a highly responsive, digital planetarium that fits in your pocket.
