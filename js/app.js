@@ -2,34 +2,42 @@
 // ---------------------------------------------------------------------------
 // Binds DOM → state → math → shader/audio pipeline.
 
-import { MathEngine, STELLAR_PRESETS, CORE_PRESETS, ASTRO_CONSTANTS, BASELINES } from './mathEngine.js';
-import { ShaderEngine } from './shaderEngine.js';
-import { AudioEngine, freqToNote } from './audioEngine.js';
+import { MathEngine, STELLAR_PRESETS, CORE_PRESETS, ASTRO_CONSTANTS, BASELINES } from './schema/constants.js';
+import { ModelAdapter } from './models/model-adapter.js';
+import { ReducedClimateSolver } from './solvers/reduced-climate.js';
+import { QHFSolver } from './solvers/qhf.js';
+import { ShaderEngine } from './shader-engine.js';
+import { AudioEngine, freqToNote } from './audio-engine.js';
 
 // ---------- Preset catalogs ----------
 const BOTTOM_PRESETS = [
-  { id:'earth',    name:'Earth System',     badge:'G-Type', stellarClass:'G-Type (Sol)',      flux:1.00, radius:1.00, desc:'The baseline habitable standard.', color:'#00e5ff',
+  { id:'earth',    name:'Earth System',     badge:'G-Type', stellarClass:'G-Type (Sol)',      flux:1.00, radius:1.00, desc:'Reference baseline. Values normalized to 1 Earth mass, 1 Earth radius, 1 AU, 288 K.', color:'#00e5ff',
     state:{ stellar:'G', pDistance:1.00, pRadius:1.00, pMass:1.00, pAlbedo:0.30, pTau:1.50, core:'silicate', label:'EARTH SYSTEM' } },
-  { id:'mars',     name:'Mars System',      badge:'G-Type', stellarClass:'G-Type (Sol)',      flux:0.43, radius:0.53, desc:'Sub-freezing desert world with low gravity.', color:'#ff6600',
+  { id:'mars',     name:'Mars System',      badge:'G-Type', stellarClass:'G-Type (Sol)',      flux:0.43, radius:0.53, desc:'Sub-freezing desert world. Observed values: radius 0.53 R⊕, orbit 1.52 AU. Albedo and τ are estimates.', color:'#ff6600',
     state:{ stellar:'G', pDistance:1.52, pRadius:0.53, pMass:0.107,pAlbedo:0.25, pTau:0.40, core:'silicate', label:'MARS SYSTEM' } },
-  { id:'venus',    name:'Venus System',     badge:'G-Type', stellarClass:'G-Type (Sol)',      flux:1.91, radius:0.95, desc:'Runaway greenhouse state with high opacity.', color:'#ffe600',
+  { id:'venus',    name:'Venus System',     badge:'G-Type', stellarClass:'G-Type (Sol)',      flux:1.91, radius:0.95, desc:'Runaway greenhouse state. Observed: radius 0.95 R⊕, orbit 0.72 AU. τ≈12 is an illustrative extreme.', color:'#ffe600',
     state:{ stellar:'G', pDistance:0.72, pRadius:0.95, pMass:0.815,pAlbedo:0.75, pTau:12.0, core:'silicate', label:'VENUS SYSTEM' } },
-  { id:'trappist', name:'TRAPPIST-1e',      badge:'M-Type', stellarClass:'M-Type (Red Dwarf)',flux:0.66, radius:0.92, desc:'Core candidate in an ultra-cool dwarf system.', color:'#ff6a30',
+  { id:'trappist', name:'TRAPPIST-1e',      badge:'M-Type', stellarClass:'M-Type (Red Dwarf)',flux:0.66, radius:0.92, desc:'Candidate in an ultra-cool dwarf system. Radius and orbit are observed; albedo and τ are estimated.', color:'#ff6a30',
     state:{ stellar:'M', pDistance:0.029,pRadius:0.92, pMass:0.69, pAlbedo:0.30, pTau:1.20, core:'silicate', label:'TRAPPIST-1E' } },
-  { id:'kepler452',name:'Kepler-452b',      badge:'G-Type', stellarClass:'G-Type (Aged Main)',flux:1.10, radius:1.63, desc:'Super-Earth orbiting a sun-like star.', color:'#6aa8ff',
+  { id:'kepler452',name:'Kepler-452b',      badge:'G-Type', stellarClass:'G-Type (Aged Main)',flux:1.10, radius:1.63, desc:'Super-Earth orbiting a sun-like star. Radius is observed; mass is estimated. Albedo and τ are assumed.', color:'#6aa8ff',
     state:{ stellar:'G', pDistance:1.05, pRadius:1.63, pMass:3.29, pAlbedo:0.30, pTau:1.60, core:'silicate', label:'KEPLER-452B' } }
 ];
 
 const CATALOG_PRESETS = [
   { name:'Kepler-22b',         hostClass:'G-Yellow Star', orbit:0.81, esi:0.75, color:'#6aa8ff',
+    dataNote:'Radius observed; mass estimated. Albedo/τ assumed.',
     state:{ stellar:'G', pDistance:0.81, pRadius:2.38, pMass:6.4,  pAlbedo:0.30, pTau:1.3, core:'water', label:'KEPLER-22B' } },
   { name:'LHS 475b',           hostClass:'M-Red Dwarf',   orbit:0.02, vsi:0.93, color:'#ff6a30',
+    dataNote:'Radius observed (JWST). Mass estimated. Albedo/τ illustrative.',
     state:{ stellar:'M', pDistance:0.02, pRadius:0.99, pMass:0.91, pAlbedo:0.45, pTau:8.0, core:'iron', label:'LHS 475B' } },
   { name:'Proxima Centauri b', hostClass:'M-Red Dwarf',   orbit:0.05, esi:0.87, color:'#ff8a3c',
+    dataNote:'Minimum mass from radial velocity. Radius assumed. Albedo/τ estimated.',
     state:{ stellar:'M', pDistance:0.049,pRadius:1.08, pMass:1.27, pAlbedo:0.30, pTau:1.4, core:'silicate', label:'PROXIMA B' } },
   { name:'Kepler-186f',        hostClass:'M-Red Dwarf',   orbit:0.40, esi:0.61, color:'#4da6ff',
+    dataNote:'Radius from transit. Mass estimated. Albedo/τ assumed.',
     state:{ stellar:'M', pDistance:0.40, pRadius:1.17, pMass:1.44, pAlbedo:0.30, pTau:1.5, core:'silicate', label:'KEPLER-186F' } },
   { name:'TOI-700 d',          hostClass:'M-Red Dwarf',   orbit:0.16, esi:0.93, color:'#00e5ff',
+    dataNote:'Radius from transit (TESS). Mass estimated. Albedo/τ assumed.',
     state:{ stellar:'M', pDistance:0.163,pRadius:1.07,pMass:1.25, pAlbedo:0.30, pTau:1.5, core:'water', label:'TOI-700 D' } }
 ];
 
@@ -55,6 +63,9 @@ const $$ = (s, r=document) => [...r.querySelectorAll(s)];
 const refs = {};
 
 let shader, audio, rafId, running = true;
+const adapter = new ModelAdapter();
+const climateSolver = new ReducedClimateSolver();
+const qhfSolver = new QHFSolver();
 
 window.addEventListener('DOMContentLoaded', () => {
   cacheRefs();
@@ -68,6 +79,9 @@ window.addEventListener('DOMContentLoaded', () => {
   bindToggles(); bindChips(); bindOverlays(); bindDialog();
   bindDrawer(); bindUnitToggle(); bindReticle();
   bindVisibility(); bindMobileDock();
+  bindDisclaimer(); bindOnboarding(); bindReset(); bindShare();
+  detectCapabilities();
+  loadStateFromURL();
 
   applyStellarPreset('G', true);
   applyCorePreset('silicate', true);
@@ -199,7 +213,8 @@ function buildCatalogList() {
         '<span>Host <b style="color:'+p.color+'">'+p.hostClass+'</b></span>' +
         '<span>Orbit <b>'+p.orbit.toFixed(2)+' AU</b></span>' +
         '<span>'+score+'</span>' +
-      '</div>';
+      '</div>' +
+      (p.dataNote ? '<div class="catalog-card__note">'+p.dataNote+'</div>' : '');
     el.addEventListener('click', () => { loadPreset({ state:p.state, color:p.color }); closeOverlay('catalog'); });
     host.appendChild(el);
   });
@@ -560,32 +575,231 @@ function bindMobileDock() {
 }
 function onResize() { shader.resize(); }
 
+// ---------- Capability Detection & Fallbacks ----------
+function detectCapabilities() {
+  // WebGL check
+  try {
+    const canvas = document.createElement('canvas');
+    const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+    if (!gl) throw new Error('no webgl');
+  } catch (_) {
+    const fb = document.getElementById('fallback-notice');
+    if (fb) fb.style.display = 'flex';
+    const dismiss = document.getElementById('fallback-dismiss');
+    if (dismiss) dismiss.addEventListener('click', () => fb.style.display = 'none');
+  }
+
+  // Audio check
+  const AC = window.AudioContext || window.webkitAudioContext;
+  if (!AC) {
+    const btn = document.getElementById('btn-audio');
+    if (btn) { btn.disabled = true; btn.title = 'Web Audio API not supported in this browser'; }
+  }
+
+  // Sensor check
+  if (!window.DeviceOrientationEvent) {
+    refs.gyroStatus.textContent = 'UNSUPPORTED';
+    if (refs.btnGyro) refs.btnGyro.disabled = true;
+  }
+}
+
+// ---------- Disclaimer Banner ----------
+function bindDisclaimer() {
+  const banner = document.getElementById('disclaimer-banner');
+  const close = document.getElementById('disclaimer-close');
+  if (!banner || !close) return;
+  const dismissed = sessionStorage.getItem('aether:disclaimer-dismissed');
+  if (dismissed) banner.style.display = 'none';
+  close.addEventListener('click', () => {
+    banner.style.display = 'none';
+    sessionStorage.setItem('aether:disclaimer-dismissed', 'true');
+  });
+}
+
+// ---------- Onboarding Overlay ----------
+function bindOnboarding() {
+  const overlay = document.getElementById('onboarding-overlay');
+  if (!overlay) return;
+  const seen = localStorage.getItem('aether:onboarding-seen');
+  if (seen) { overlay.style.display = 'none'; return; }
+
+  // Star selection
+  $$('[data-ob-star]', overlay).forEach(btn => {
+    btn.addEventListener('click', () => {
+      $$('[data-ob-star]', overlay).forEach(b => b.classList.remove('chip--active'));
+      btn.classList.add('chip--active');
+    });
+  });
+  // Planet selection
+  $$('[data-ob-planet]', overlay).forEach(btn => {
+    btn.addEventListener('click', () => {
+      $$('[data-ob-planet]', overlay).forEach(b => b.classList.remove('chip--active'));
+      btn.classList.add('chip--active');
+    });
+  });
+  // Start Exploring
+  const go = document.getElementById('btn-start-exploring');
+  if (go) {
+    go.addEventListener('click', () => {
+      // Apply selected star
+      const starBtn = $$('[data-ob-star]', overlay).find(b => b.classList.contains('chip--active'));
+      if (starBtn) applyStellarPreset(starBtn.dataset.obStar);
+      // Apply selected planet
+      const planetBtn = $$('[data-ob-planet]', overlay).find(b => b.classList.contains('chip--active'));
+      if (planetBtn) {
+        const pMap = { earth:'earth', mars:'mars', venus:'venus' };
+        const pid = pMap[planetBtn.dataset.obPlanet];
+        if (pid) {
+          const p = BOTTOM_PRESETS.find(x => x.id === pid);
+          if (p) loadPreset(p);
+        }
+      }
+      overlay.style.display = 'none';
+      localStorage.setItem('aether:onboarding-seen', 'true');
+      state._dirty.ui = true;
+    });
+  }
+}
+
+// ---------- Reset Button ----------
+function bindReset() {
+  const btn = document.getElementById('btn-reset');
+  if (!btn) return;
+  btn.addEventListener('click', () => {
+    applyStellarPreset('G');
+    applyCorePreset('silicate');
+    state.planet.distance = 1.00; setDistanceSliderFromValue(1.00);
+    state.planet.radius = 1.00; refs.sliders['p-radius'].value = 1.00; setSliderFill(refs.sliders['p-radius']);
+    state.planet.mass = 1.00; refs.sliders['p-mass'].value = 1.00; setSliderFill(refs.sliders['p-mass']);
+    state.planet.albedo = 0.30; refs.sliders['p-albedo'].value = 0.30; setSliderFill(refs.sliders['p-albedo']);
+    state.planet.tau = 1.50; refs.sliders['p-tau'].value = 1.50; setSliderFill(refs.sliders['p-tau']);
+    setActivePreset('earth');
+    refs.hudTarget.textContent = 'EARTH SYSTEM';
+    state._dirty.ui = true;
+  });
+}
+
+// ---------- Share Configuration URL ----------
+function bindShare() {
+  const btn = document.getElementById('btn-share');
+  const input = document.getElementById('share-url');
+  if (!btn || !input) return;
+  btn.addEventListener('click', () => {
+    const params = new URLSearchParams({
+      star: state.star.preset || 'custom',
+      teff: state.star.teff,
+      rstar: state.star.rstar.toFixed(2),
+      dist: state.planet.distance.toFixed(3),
+      rad: state.planet.radius.toFixed(2),
+      mass: state.planet.mass.toFixed(3),
+      alb: state.planet.albedo.toFixed(2),
+      tau: state.planet.tau.toFixed(2),
+      core: state.planet.core
+    });
+    const url = window.location.origin + window.location.pathname + '?' + params.toString();
+    input.value = url;
+    input.select();
+    try { navigator.clipboard.writeText(url); } catch (_) {}
+  });
+}
+
+function loadStateFromURL() {
+  const params = new URLSearchParams(window.location.search);
+  if (!params.has('star') && !params.has('teff')) return; // No URL state
+
+  const starKey = params.get('star');
+  if (starKey && STELLAR_PRESETS[starKey]) applyStellarPreset(starKey);
+  else {
+    const teff = parseFloat(params.get('teff'));
+    const rstar = parseFloat(params.get('rstar'));
+    if (!isNaN(teff)) { state.star.teff = teff; refs.sliders['s-teff'].value = teff; setSliderFill(refs.sliders['s-teff']); }
+    if (!isNaN(rstar)) { state.star.rstar = rstar; refs.sliders['s-rstar'].value = rstar; setSliderFill(refs.sliders['s-rstar']); }
+  }
+
+  const dist = parseFloat(params.get('dist'));
+  if (!isNaN(dist)) { state.planet.distance = dist; setDistanceSliderFromValue(dist); }
+  const rad = parseFloat(params.get('rad'));
+  if (!isNaN(rad)) { state.planet.radius = rad; refs.sliders['p-radius'].value = rad; setSliderFill(refs.sliders['p-radius']); }
+  const mass = parseFloat(params.get('mass'));
+  if (!isNaN(mass)) { state.planet.mass = mass; refs.sliders['p-mass'].value = mass; setSliderFill(refs.sliders['p-mass']); }
+  const alb = parseFloat(params.get('alb'));
+  if (!isNaN(alb)) { state.planet.albedo = alb; refs.sliders['p-albedo'].value = alb; setSliderFill(refs.sliders['p-albedo']); }
+  const tau = parseFloat(params.get('tau'));
+  if (!isNaN(tau)) { state.planet.tau = tau; refs.sliders['p-tau'].value = tau; setSliderFill(refs.sliders['p-tau']); }
+  const core = params.get('core');
+  if (core && CORE_PRESETS[core]) applyCorePreset(core);
+
+  // Hide onboarding if URL has state
+  const ob = document.getElementById('onboarding-overlay');
+  if (ob) ob.style.display = 'none';
+  localStorage.setItem('aether:onboarding-seen', 'true');
+}
+
+// ---------- Calibration Range Check ----------
+function checkCalibrationRange() {
+  const warnings = [];
+  const teff = state.star.teff;
+  const tau = state.planet.tau;
+  const alb = state.planet.albedo;
+  const dist = state.planet.distance;
+  const rad = state.planet.radius;
+  const mass = state.planet.mass;
+
+  // Kopparapu polynomial valid ~2500-7000K
+  if (teff < 2600 || teff > 7200) warnings.push('Stellar temperature outside Kopparapu polynomial range (2500–7000 K)');
+  // Optical depth extremes
+  if (tau > 12) warnings.push('Optical depth > 12 exceeds typical planetary values');
+  if (tau < 0.01 && tau > 0) warnings.push('Near-zero optical depth — model treats as vacuum');
+  // Albedo edge
+  if (alb > 0.9) warnings.push('Albedo > 0.9 — approaching perfect reflector (physically implausible)');
+  // Extreme distance
+  if (dist < 0.01) warnings.push('Orbital distance < 0.01 AU — inside stellar Roche limit for most stars');
+  if (dist > 4.5) warnings.push('Orbital distance > 4.5 AU — beyond typical habitable zone consideration');
+  // Extreme mass-radius
+  if (mass / (rad * rad) > 50) warnings.push('Mass-to-radius² ratio extreme — surface gravity exceeds model assumptions');
+  if (rad > 2.5 && mass < 1) warnings.push('Large radius with low mass — density below model range');
+
+  const notice = document.getElementById('calibration-notice');
+  if (!notice) return;
+  if (warnings.length > 0) {
+    notice.querySelector('span').innerHTML = '⚠️ <b>Outside calibrated range</b> — ' + warnings[0] + (warnings.length > 1 ? ' (+' + (warnings.length - 1) + ' more)' : '') + '. Results are extrapolated and may be unreliable.';
+    notice.style.display = 'flex';
+  } else {
+    notice.style.display = 'none';
+  }
+}
+
 // ---------- Physics ----------
 function updatePhysics() {
-  state.star.lum = MathEngine.stellarLuminosity(state.star.rstar, state.star.teff);
-  const dens = MathEngine.bulkDensity(state.planet.radius, state.planet.mass, state.planet.densityMul);
-  const sp = MathEngine.structuralParams(state.planet.mass, state.planet.radius);
-  state.planet.density_cgs = dens.gcm3;
-  state.planet.vesc_kms = sp.vesc_kms; state.planet.g_ms2 = sp.g_ms2;
-  state.planet.gEarth = sp.gEarth; state.planet.escapeNorm = sp.escapeEarthUnits;
-  const rt = MathEngine.radiativeTransfer(state.star.teff, state.star.rstar,
-    state.planet.distance, state.planet.albedo, state.planet.tau);
-  state.planet.tEq = rt.equilibriumTemp; state.planet.tSurf = rt.surfaceTemp;
-  const hz = MathEngine.habitableZone(state.star.teff, state.star.lum);
-  state.planet.climate = MathEngine.climateState(state.planet.tSurf, state.planet.tau, state.planet.distance, hz);
-  // Correct thresholds per spec:
-  // Glaciated Deep Freeze if τ<0.2 AND far out (beyond earlyMars or outer HZ)
-  // Runaway if τ>6 OR distance < runawayGreenhouse boundary
-  const farOut = hz.earlyMars && state.planet.distance > hz.earlyMars;
-  const closeIn = hz.runawayGreenhouse && state.planet.distance < hz.runawayGreenhouse;
-  if (state.planet.tau < 0.2 && farOut) state.planet.climate = {
-    label:'Glaciated Deep Freeze', sub:'τ≈0 vacuum & distant orbit', color:'blue',
-    status:'Max Greenhouse Frost Boundary'
+  // Build domain models via adapter
+  adapter.buildFromLegacyState(state);
+
+  // Run reduced climate solver
+  const climateResult = climateSolver.solve(adapter);
+
+  // Update state from solver output
+  state.star.lum = adapter.star?.luminositySolar ?? MathEngine.stellarLuminosity(state.star.rstar, state.star.teff);
+  state.planet.density_cgs = adapter.planet?.densityGcm3 ?? 5.51;
+  state.planet.vesc_kms = adapter.planet?.escapeVelocityKms ?? 11.2;
+  state.planet.g_ms2 = adapter.planet?.gravityMs2 ?? 9.81;
+  state.planet.gEarth = adapter.planet?.gravityEarth ?? 1.0;
+  state.planet.escapeNorm = adapter.planet?.escapeVelocityEarthUnits ?? 1.0;
+  state.planet.tEq = climateResult.equilibrium_temperature_k;
+  state.planet.tSurf = climateResult.surface_temperature_k;
+  state.planet.climate = {
+    label: climateResult.climate_regime?.label ?? 'Unknown',
+    sub: climateResult.climate_regime?.description ?? '',
+    color: climateResult.climate_regime?.color ?? 'cyan',
+    status: climateResult.climate_regime?.label ?? '',
+    confidence: 'Low — atmospheric composition not modeled',
+    surface_water: climateResult.surface_water
   };
-  if (state.planet.tau > 6.0 || closeIn) state.planet.climate = {
-    label:'Runaway Greenhouse Phase', sub:'Superheated atmospheric collapse', color:'gold',
-    status:'IR-Driven Water Loss Zone'
-  };
+  state.planet.climateResult = climateResult;
+  state.planet.hz = adapter.star?.getHabitableZone() ?? MathEngine.habitableZone(state.star.teff, state.star.lum);
+
+  // Run QHF for surface liquid water target
+  state.planet.qhfResult = qhfSolver.solve(climateResult, { target_type: 'surface_liquid_water' });
+
   shader.setPlanetState({
     surfaceTemp: state.planet.tSurf, opticalDepth: state.planet.tau, mode: state.mode,
     starColorHex: state.star.preset ? STELLAR_PRESETS[state.star.preset].color : '#fff3c2',
@@ -593,6 +807,7 @@ function updatePhysics() {
     atmoColorHex: atmoColorFor(state.planet.tSurf, state.planet.tau)
   });
   maybeHaptic(state.planet.climate);
+  checkCalibrationRange();
 }
 function atmoColorFor(T, tau) {
   if (T<250) return '#9fc8ff';
@@ -650,6 +865,9 @@ function syncUI() {
   if (cb) {
     refs.cDot.className = 'climate-badge__dot climate-badge__dot--'+cb.color;
     refs.cLabel.textContent = cb.label; refs.cSub.textContent = cb.sub;
+    // Show confidence if available
+    const confEl = document.getElementById('climate-confidence');
+    if (confEl && cb.confidence) confEl.textContent = 'Confidence: ' + cb.confidence;
   }
   updateHZBar(hz);
 
@@ -793,10 +1011,9 @@ function setActivePreset(id) {
 
 // ---------- Casual tutorial popups ----------
 const TUTORIAL_TIPS = [
-  { target: '#p-tau',    html: '<b>Optical depth τ</b> controls how much heat the atmosphere traps. Slide right to thicken the greenhouse; slide left toward a vacuum.', after: 600 },
-  { target: '#p-albedo', html: '<b>Albedo</b> is how much starlight clouds & ice reflect away. Bright ice raises it; dark oceans lower it.', after: 4200 },
-  { target: '#hz-status', html: '<b>Habitable Zone</b> markers show where liquid water is stable. Drag the distance slider (or click the AU badge) to move the planet in & out.', after: 8200 },
-  { target: '#btn-telemetry', html: 'Toggle <b>Telemetry</b> for equations + comparative tables, or leave it off for plain-language hints.', after: 12000 }
+  { target: '#p-tau',    html: '<b>Optical depth τ</b> controls how strongly the atmosphere traps heat. Slide right for thicker atmosphere.', after: 2000 },
+  { target: '#p-albedo', html: '<b>Albedo</b> is the fraction of starlight reflected away. 0.30 = Earth, 0.75 = Venus clouds.', after: 6000 },
+  { target: '#hz-status', html: 'The <b>Habitable Zone</b> shows where liquid water is thermodynamically possible. Drag distance slider to explore.', after: 10000 }
 ];
 function showTutorialTips() {
   if (state.telemetry) return;

@@ -1087,3 +1087,250 @@ body.telemetry-on .sci-only { display: block; }
 .hz-bar__track.is-expanded #hz-marker-rg span { top: 35px; }
 .hz-bar__track.is-expanded #hz-marker-mg span { top: 60px; }
 .hz-bar__track.is-expanded #hz-marker-em span { top: 85px; }
+
+/* ======================== DISCLAIMER BANNER ======================== */
+.disclaimer-banner {
+  position: fixed;
+  top: var(--appbar-h);
+  left: 0; right: 0;
+  z-index: 45;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 18px;
+  background: rgba(0, 229, 255, 0.08);
+  border-bottom: 1px solid rgba(0, 229, 255, 0.2);
+  font-size: 11px;
+  color: var(--titan);
+  line-height: 1.4;
+}
+.disclaimer-banner b { color: var(--cyan); }
+.disclaimer-banner__close {
+  flex-shrink: 0;
+  width: 24px; height: 24px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 4px;
+  color: var(--cosmic);
+  font-size: 14px;
+  cursor: pointer;
+  transition: all .15s ease;
+}
+.disclaimer-banner__close:hover { color: var(--titan); background: rgba(255,255,255,0.08); }
+
+/* ======================== ONBOARDING OVERLAY ======================== */
+.onboarding-overlay {
+  position: fixed; inset: 0; z-index: 100;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(2,2,5,0.85);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  padding: 20px;
+}
+.onboarding-panel {
+  max-width: 480px; width: 100%;
+  background: var(--glass-hover);
+  border: 1px solid rgba(0,229,255,0.25);
+  border-radius: var(--radius-lg);
+  padding: 28px 24px;
+  box-shadow: 0 30px 80px -20px rgba(0,0,0,0.8), 0 0 0 1px rgba(0,229,255,0.1);
+}
+.onboarding-panel h2 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 20px; font-weight: 700; letter-spacing: 3px;
+  color: var(--titan); margin-bottom: 8px; text-align: center;
+}
+.onboarding-panel > p {
+  font-size: 12px; color: var(--cosmic); text-align: center; margin-bottom: 20px; line-height: 1.5;
+}
+.onboarding-step { margin-bottom: 16px; }
+.onboarding-step h3 {
+  font-size: 11px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase;
+  color: var(--titan); margin-bottom: 8px;
+}
+.onboarding-presets { flex-wrap: wrap; }
+.onboarding-note {
+  font-size: 11px; color: var(--cosmic); line-height: 1.6;
+  padding: 10px 12px; border-radius: var(--radius-sm);
+  background: rgba(255,230,0,0.06); border: 1px solid rgba(255,230,0,0.15);
+  margin-bottom: 18px;
+}
+.onboarding-note b { color: var(--gold); }
+.onboarding-go {
+  display: block; width: 100%;
+  padding: 14px; font-size: 14px; font-weight: 600; letter-spacing: 1px;
+  border-radius: var(--radius-md);
+}
+
+/* ======================== WEBGL FALLBACK NOTICE ======================== */
+.fallback-notice {
+  position: fixed;
+  top: calc(var(--appbar-h) + 48px);
+  left: 50%; transform: translateX(-50%);
+  z-index: 90;
+  max-width: 500px; width: calc(100% - 40px);
+  padding: 14px 18px;
+  background: rgba(255,64,96,0.1);
+  border: 1px solid rgba(255,64,96,0.3);
+  border-radius: var(--radius-md);
+  font-size: 12px; color: var(--titan);
+}
+.fallback-notice b { color: var(--danger); }
+.fallback-notice .btn { margin-left: 12px; font-size: 10px; padding: 4px 10px; }
+
+/* ======================== CALIBRATION NOTICE ======================== */
+.calibration-notice {
+  position: fixed;
+  bottom: calc(var(--drawer-h-collapsed) + 8px);
+  left: 50%; transform: translateX(-50%);
+  z-index: 45;
+  max-width: 560px; width: calc(100% - 40px);
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 8px 14px;
+  background: rgba(255,230,0,0.08);
+  border: 1px solid rgba(255,230,0,0.25);
+  border-radius: var(--radius-md);
+  font-size: 11px; color: var(--titan);
+  line-height: 1.4;
+}
+.calibration-notice b { color: var(--gold); }
+
+/* ======================== MODEL LIMITATION BOX ======================== */
+.model-limitation {
+  display: flex; gap: 8px; align-items: flex-start;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  background: rgba(255,230,0,0.04);
+  border: 1px solid rgba(255,230,0,0.12);
+  margin-top: 8px;
+  font-size: 10px; color: var(--cosmic); line-height: 1.5;
+}
+.model-limitation__icon { flex-shrink: 0; font-size: 12px; }
+.model-limitation__text b { color: var(--gold); font-weight: 600; }
+.eq-limitation { margin-top: 16px; }
+
+/* ======================== CLIMATE CONFIDENCE ======================== */
+.climate-confidence {
+  display: block;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px; letter-spacing: 0.5px;
+  color: var(--cosmic);
+  margin-top: 4px;
+  font-style: normal;
+}
+
+/* ======================== SENSOR NOTE ======================== */
+.sensor-note {
+  font-size: 10px; color: var(--cosmic); line-height: 1.5;
+  margin-top: 8px; padding: 6px 8px;
+  background: rgba(255,255,255,0.02); border-radius: var(--radius-sm);
+}
+
+/* ======================== SHARE URL BAR ======================== */
+.share-bar {
+  position: fixed;
+  bottom: calc(var(--safe-bottom) + 8px);
+  left: 18px; right: 18px;
+  z-index: 35;
+  display: flex; align-items: center; gap: 8px;
+}
+.share-url-input {
+  flex: 1;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  padding: 6px 10px;
+  background: var(--glass);
+  border: 1px solid rgba(224,224,250,0.08);
+  border-radius: 6px;
+  color: var(--cosmic);
+  outline: none;
+}
+.share-url-input:focus { border-color: var(--cyan); color: var(--titan); }
+
+/* ======================== BASELINE BANNER ======================== */
+.baseline-banner {
+  padding: 8px 18px;
+  font-size: 10.5px;
+  color: var(--cosmic);
+  line-height: 1.5;
+  border-bottom: 1px solid rgba(224,224,250,0.04);
+}
+.baseline-banner b { color: var(--cyan); }
+
+/* ======================== TOOLTIP ======================== */
+[data-tooltip] {
+  position: relative;
+  cursor: help;
+}
+[data-tooltip]:hover::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 0;
+  min-width: 200px;
+  max-width: 300px;
+  padding: 8px 10px;
+  background: var(--glass-hover);
+  border: 1px solid rgba(0,229,255,0.25);
+  border-radius: var(--radius-sm);
+  font-family: 'Inter', sans-serif;
+  font-size: 10.5px;
+  font-weight: 400;
+  color: var(--titan);
+  line-height: 1.5;
+  z-index: 70;
+  pointer-events: none;
+  box-shadow: 0 8px 24px -8px rgba(0,0,0,0.7);
+  white-space: normal;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+/* ======================== EQUATION VARIABLES & ASSUMPTIONS ======================== */
+.eq__vars {
+  display: flex; flex-direction: column; gap: 2px;
+  padding: 6px 8px;
+  background: rgba(255,255,255,0.02);
+  border-radius: 4px;
+  margin-bottom: 6px;
+  font-size: 10px; color: var(--cosmic); line-height: 1.6;
+}
+.eq__vars code {
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--cyan);
+  font-size: 10px;
+}
+.eq__assumption {
+  font-size: 10px; color: var(--cosmic); line-height: 1.5;
+  padding: 6px 8px;
+  background: rgba(255,230,0,0.03);
+  border-left: 2px solid rgba(255,230,0,0.2);
+  border-radius: 0 4px 4px 0;
+}
+.eq__assumption b { color: var(--gold); }
+.cite p { margin-bottom: 6px; font-size: 10.5px; line-height: 1.5; }
+.cite p:last-child { margin-bottom: 0; }
+
+/* ======================== CATALOG DATA NOTE ======================== */
+.catalog-card__note {
+  font-size: 9.5px; color: var(--cosmic); font-style: italic;
+  margin-top: 4px; line-height: 1.4;
+  padding-top: 4px; border-top: 1px dashed rgba(224,224,250,0.04);
+}
+
+/* ======================== MOBILE RESPONSIVE UPDATES ======================== */
+@media (max-width: 1023px) {
+  .disclaimer-banner { font-size: 10px; padding: 6px 12px; }
+  .onboarding-panel { padding: 20px 16px; }
+  .onboarding-panel h2 { font-size: 17px; }
+  .share-bar { display: none; }
+  .calibration-notice { font-size: 10px; left: 12px; right: 12px; transform: none; }
+  .baseline-banner { font-size: 9.5px; }
+  [data-tooltip]:hover::after { display: none; /* no hover tooltips on touch */ }
+}
+
+@media (max-width: 560px) {
+  .onboarding-panel h2 { font-size: 15px; letter-spacing: 2px; }
+  .onboarding-step h3 { font-size: 10px; }
+  .climate-confidence { font-size: 8px; }
+}
