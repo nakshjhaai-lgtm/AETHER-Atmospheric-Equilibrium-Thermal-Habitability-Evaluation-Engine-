@@ -1036,6 +1036,90 @@ body.telemetry-on .formula-inline { font-family: 'JetBrains Mono', monospace; fo
 body.telemetry-on .sci-only { display: block; }
 .formula-inline { display: none; }
 
+/* ======================== MODE TABS ======================== */
+.mode-tabs {
+  display: flex; gap: 2px;
+  padding: 8px 12px 0;
+  border-bottom: 1px solid rgba(224,224,250,0.05);
+  flex-shrink: 0;
+}
+.mode-tab {
+  flex: 1;
+  padding: 8px 6px;
+  font-size: 11px; font-weight: 600; letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--cosmic);
+  border-radius: 8px 8px 0 0;
+  cursor: pointer;
+  transition: all .2s ease-in-out;
+  text-align: center;
+}
+.mode-tab:hover { color: var(--titan); }
+.mode-tab--active {
+  color: var(--cyan);
+  background: var(--cyan-soft);
+  border-bottom: 2px solid var(--cyan);
+}
+
+/* Mode visibility: hide advanced/expert tabs and panels in beginner mode */
+body[data-mode="beginner"] .adv-only-tab,
+body[data-mode="beginner"] .expert-only-tab,
+body[data-mode="beginner"] .advanced-only,
+body[data-mode="beginner"] .expert-only { display: none !important; }
+body[data-mode="advanced"] .expert-only,
+body[data-mode="advanced"] .expert-only-tab { display: none !important; }
+/* Advanced-only elements visible in advanced and expert */
+body[data-mode="beginner"] .advanced-only { display: none !important; }
+
+/* ======================== GAS COMPOSITION GRID ======================== */
+.gas-grid { display: flex; flex-direction: column; gap: 6px; }
+.gas-row {
+  display: grid; grid-template-columns: 36px 1fr 64px; gap: 8px; align-items: center;
+}
+.gas-row label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px; font-weight: 600; color: var(--cyan); letter-spacing: 0.5px;
+}
+.gas-row input[type="range"] { height: 18px; }
+.gas-val {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px; color: var(--titan); text-align: right;
+}
+
+/* ======================== SCENARIO EDITOR ======================== */
+.scenario-editor {
+  width: 100%;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--titan);
+  background: rgba(5,5,8,0.8);
+  border: 1px solid rgba(224,224,250,0.08);
+  border-radius: var(--radius-sm);
+  padding: 10px;
+  resize: vertical;
+  tab-size: 2;
+}
+.scenario-editor:focus { outline: none; border-color: var(--cyan); }
+
+/* ======================== QHF RESULT ======================== */
+#qhf-result-body .qhf-suitability {
+  display: flex; align-items: center; gap: 12px;
+  margin-bottom: 10px;
+}
+#qhf-result-body .qhf-suitability__bar {
+  flex: 1; height: 8px; background: var(--nebula); border-radius: 4px; overflow: hidden;
+}
+#qhf-result-body .qhf-suitability__fill {
+  height: 100%; background: var(--cyan); border-radius: 4px; transition: width 0.3s ease;
+}
+#qhf-result-body .qhf-suitability__val {
+  font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 16px; color: var(--titan);
+  min-width: 48px;
+}
+#qhf-result-body .qhf-factor { font-size: 11px; color: var(--cosmic); line-height: 1.5; padding: 2px 0; }
+#qhf-result-body .qhf-factor b { color: var(--gold); }
+#qhf-result-body .qhf-note { font-size: 10px; color: var(--cosmic); margin-top: 6px; font-style: italic; }
+
 /* Casual-mode tutorial popups (first-run hints) */
 .tutorial-tip {
   position: absolute;

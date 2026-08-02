@@ -38,10 +38,24 @@ export class ModeController {
     advancedOnly.forEach(el => el.style.display = mode !== 'beginner' ? '' : 'none');
     expertOnly.forEach(el => el.style.display = mode === 'expert' ? '' : 'none');
 
-    // Update mode pills
+    // Update mode tabs in control panel
+    const modeTabs = document.querySelectorAll('.mode-tab');
+    modeTabs.forEach(tab => {
+      tab.classList.toggle('mode-tab--active', tab.dataset.mode === mode);
+    });
+
+    // Update mode pills in header (backward compat)
     const pills = document.querySelectorAll('.mode-pill');
     pills.forEach(pill => {
       pill.classList.toggle('mode-pill--active', pill.dataset.mode === mode);
+    });
+
+    // Hide advanced/expert tab buttons when not in appropriate mode
+    document.querySelectorAll('.adv-only-tab').forEach(el => {
+      el.style.display = mode !== 'beginner' ? '' : 'none';
+    });
+    document.querySelectorAll('.expert-only-tab').forEach(el => {
+      el.style.display = mode === 'expert' ? '' : 'none';
     });
   }
 

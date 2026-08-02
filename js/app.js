@@ -2,10 +2,14 @@
 // ---------------------------------------------------------------------------
 // Binds DOM → state → math → shader/audio pipeline.
 
-import { MathEngine, STELLAR_PRESETS, CORE_PRESETS, ASTRO_CONSTANTS, BASELINES } from './schema/constants.js';
+import { MathEngine, STELLAR_PRESETS, CORE_PRESETS, ASTRO_CONSTANTS, BASELINES, ATMOSPHERE_PRESETS, ORGANISM_MODELS } from './schema/constants.js';
 import { ModelAdapter } from './models/model-adapter.js';
 import { ReducedClimateSolver } from './solvers/reduced-climate.js';
 import { QHFSolver } from './solvers/qhf.js';
+import { ScenarioValidator } from './schema/validate-scenario.js';
+import { ModeController } from './ui/mode-controller.js';
+import { ResultRenderer } from './ui/result-renderer.js';
+import { bindModeSelector, bindAtmosphereControls, bindBiologyTarget, bindScenarioEditor, renderQHFResult } from './ui/integration.js';
 import { ShaderEngine } from './shader-engine.js';
 import { AudioEngine, freqToNote } from './audio-engine.js';
 
@@ -66,6 +70,10 @@ let shader, audio, rafId, running = true;
 const adapter = new ModelAdapter();
 const climateSolver = new ReducedClimateSolver();
 const qhfSolver = new QHFSolver();
+const modeController = new ModeController();
+let resultRenderer = null;
+let currentBiologyTarget = 'surface_liquid_water';
+let currentFidelity = 'reduced';
 
 window.addEventListener('DOMContentLoaded', () => {
   cacheRefs();
@@ -80,8 +88,14 @@ window.addEventListener('DOMContentLoaded', () => {
   bindDrawer(); bindUnitToggle(); bindReticle();
   bindVisibility(); bindMobileDock();
   bindDisclaimer(); bindOnboarding(); bindReset(); bindShare();
+  bindModeSelector(modeController, state);
+  bindAtmosphereControls(state, refs);
+  bindBiologyTarget(state, { get value() { return currentBiologyTarget; }, set value(v) { currentBiologyTarget = v; } });
+  bindScenarioEditor(adapter, state, { get value() { return currentFidelity; }, set value(v) { currentFidelity = v; } }, { get value() { return currentBiologyTarget; }, set value(v) { currentBiologyTarget = v; } });
   detectCapabilities();
   loadStateFromURL();
+
+  resultRenderer = new ResultRenderer(document.getElementById('qhf-result-body'));
 
   applyStellarPreset('G', true);
   applyCorePreset('silicate', true);
@@ -797,8 +811,9 @@ function updatePhysics() {
   state.planet.climateResult = climateResult;
   state.planet.hz = adapter.star?.getHabitableZone() ?? MathEngine.habitableZone(state.star.teff, state.star.lum);
 
-  // Run QHF for surface liquid water target
-  state.planet.qhfResult = qhfSolver.solve(climateResult, { target_type: 'surface_liquid_water' });
+  // Run QHF for the selected biological target
+  const qhfTarget = { target_type: currentBiologyTarget };
+  state.planet.qhfResult = qhfSolver.solve(climateResult, qhfTarget);
 
   shader.setPlanetState({
     surfaceTemp: state.planet.tSurf, opticalDepth: state.planet.tau, mode: state.mode,
@@ -883,7 +898,7 @@ function syncUI() {
     if (refs.oscopeFreq) refs.oscopeFreq.textContent = note;
   }
 
-  refs.hudMode.textContent = state.mode==='geophysics'?'GEOPHYSICS':'ASTROBIOLOGY';
+  refs.hudMode.textContent = (document.body.dataset.mode || 'beginner').toUpperCase();
   refs.hudStatus.textContent = (cb&&cb.label)?cb.label.toUpperCase():'—';
   refs.hudStatus.className = 'hud-val hud-val--'+((cb&&cb.color)||'cyan');
 
@@ -896,6 +911,10 @@ function syncUI() {
   updatePlanetCross();
   updateSpectrum();
   refs.fps.textContent = shader.fps;
+  // Render QHF result in advanced/expert mode
+  if (state.planet.qhfResult && modeController.currentMode !== "beginner") {
+    renderQHFResult(state.planet.qhfResult, resultRenderer, modeController.currentMode);
+  }
 }
 
 function setRing(el, value, color) {
