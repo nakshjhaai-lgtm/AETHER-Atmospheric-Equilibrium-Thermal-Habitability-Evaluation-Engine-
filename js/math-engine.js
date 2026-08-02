@@ -79,8 +79,10 @@ export class MathEngine {
   // Physical orbital distance (AU) of a Kopparapu boundary
   static kopparapuDistanceAU(teff, luminositySolar, boundaryKey) {
     const seff = this.kopparapuSeff(teff, boundaryKey);
-    if (!seff || seff <= 0) return null;
-    return Math.sqrt(luminositySolar / seff);
+    if (!seff || seff <= 0 || !isFinite(seff)) return null;
+    luminositySolar = Math.max(0.0001, luminositySolar);
+    const dist = Math.sqrt(luminositySolar / seff);
+    return isFinite(dist) && dist > 0 ? dist : null;
   }
 
   // Stellar luminosity (L☉) from Stefan-Boltzmann: L = 4πR²σT⁴
@@ -109,6 +111,13 @@ export class MathEngine {
   // T_eq = T_eff * sqrt(R_*/(2d)) * (1-A)^(1/4)   [with d and R_* in same units]
   // T_s^4 = (3/4) T_eq^4 (τ_s + 2/3)
   static radiativeTransfer(teff, rStarSolar, distanceAU, albedo, tau) {
+    // Guard against physically invalid inputs
+    teff = Math.max(100, Math.min(50000, teff));
+    rStarSolar = Math.max(0.01, Math.min(100, rStarSolar));
+    distanceAU = Math.max(0.001, Math.min(1000, distanceAU));
+    albedo = Math.max(0, Math.min(0.999, albedo));
+    tau = Math.max(0, Math.min(100, tau));
+
     // Convert R_* (solar units) and d (AU) into a common dimensionless ratio.
     // R_* / d in same length units: R_sun_km / (AU_to_km).
     const rel = (rStarSolar * ASTRO_CONSTANTS.SOLAR_RADIUS_KM) / (distanceAU * ASTRO_CONSTANTS.AU_TO_KM);
@@ -128,6 +137,9 @@ export class MathEngine {
 
   // Escape velocity (km/s) and surface gravity (G) from mass & radius (Earth units)
   static structuralParams(massEarth, radiusEarth) {
+    // Guard against division by zero or negative values
+    massEarth = Math.max(0.001, massEarth);
+    radiusEarth = Math.max(0.01, radiusEarth);
     // v_esc ∝ sqrt(M/R); v_esc_⊕ = 11.2 km/s
     const vesc = ASTRO_CONSTANTS.EARTH_ESCAPE_KMS * Math.sqrt(massEarth / radiusEarth);
     // g ∝ M/R²; g_⊕ = 9.81 m/s²
@@ -137,50 +149,56 @@ export class MathEngine {
   }
 
   // Climate classification label based on T_surf, τ, and orbital distance.
-  // Status strings match the AETHER spectral-weight badge vocabulary exactly.
+  // Uses regime-based terminology rather than binary habitability claims.
+  // Output includes a confidence note because atmospheric composition is not modeled.
   static climateState(surfaceTemp, tau, distanceAU, habitableBounds) {
     const pastRunaway = habitableBounds?.runawayGreenhouse != null && distanceAU < habitableBounds.runawayGreenhouse;
     const pastMaxGreen = habitableBounds?.maximumGreenhouse != null && distanceAU > habitableBounds.maximumGreenhouse;
 
     if (surfaceTemp > 373 || tau > 6.0 || pastRunaway) {
       return {
-        label: 'Runaway Greenhouse Phase',
-        sub: 'Superheated atmospheric collapse',
+        label: 'Extreme Greenhouse',
+        sub: 'Surface T > 373 K or τ > 6 — water boils at 1 atm',
         color: 'gold',
-        status: 'IR-Driven Water Loss Zone'
+        status: 'IR-Driven Water Loss Zone',
+        confidence: 'Low — atmospheric composition not modeled'
       };
     }
     if (surfaceTemp < 250 || pastMaxGreen) {
       return {
-        label: 'Glaciated Deep Freeze',
-        sub: 'Cryogenic surface state',
+        label: 'Frozen Surface',
+        sub: 'Surface T < 250 K — water freezes',
         color: 'blue',
-        status: 'Max Greenhouse Frost Boundary'
+        status: 'Max Greenhouse Frost Boundary',
+        confidence: 'Low — atmospheric composition not modeled'
       };
     }
-    // Within Kopparapu HZ or near-temperate: always surface a canonical badge status
+    // Thermodynamically possible for liquid water at 1 atm pressure
     if (surfaceTemp >= 273 && surfaceTemp <= 323) {
       return {
-        label: 'Liquid Stable Oceans',
-        sub: 'τ within temperate window',
+        label: 'Warm Temperate',
+        sub: 'Surface T 273–323 K — liquid water thermodynamically possible',
         color: 'cyan',
-        status: 'Stable Liquid Water Zone'
+        status: 'Stable Liquid Water Zone',
+        confidence: 'Low — assumes 1 atm pressure, no data on water availability or atmosphere'
       };
     }
-    // Edge cases still inside HZ: pin badge to the nearest canonical zone
+    // Edge cases
     if (surfaceTemp < 273) {
       return {
-        label: 'Cold Sub-Arid State',
-        sub: 'Marginal glaciation regime',
+        label: 'Cold Sub-Arid',
+        sub: 'Surface T 250–273 K — marginal for liquid water',
         color: 'blue',
-        status: 'Max Greenhouse Frost Boundary'
+        status: 'Max Greenhouse Frost Boundary',
+        confidence: 'Low — atmospheric composition not modeled'
       };
     }
     return {
-      label: 'Warm Moist Greenhouse',
-      sub: 'Elevated thermal profile',
+      label: 'Hot Greenhouse',
+      sub: 'Surface T 323–373 K — too hot for Earth-like biosphere',
       color: 'gold',
-      status: 'IR-Driven Water Loss Zone'
+      status: 'IR-Driven Water Loss Zone',
+      confidence: 'Low — atmospheric composition not modeled'
     };
   }
 

@@ -240,6 +240,17 @@ export class ShaderEngine {
     this.renderer.domElement.style.touchAction = 'none';
     this.container.appendChild(this.renderer.domElement);
 
+    // Handle WebGL context loss gracefully
+    this.renderer.domElement.addEventListener('webglcontextlost', (e) => {
+      e.preventDefault();
+      console.warn('AETHER: WebGL context lost. Planet visualization paused.');
+    });
+    this.renderer.domElement.addEventListener('webglcontextrestored', () => {
+      console.info('AETHER: WebGL context restored. Rebuilding scene.');
+      this.buildPlanet();
+      this.buildStarfield();
+    });
+
     this.starLight = new THREE.DirectionalLight(0xfff3c2, 1.6);
     this.starLight.position.set(5, 2, 4);
     this.scene.add(this.starLight);
