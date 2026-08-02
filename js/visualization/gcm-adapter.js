@@ -1,6 +1,8 @@
-// js/visualization/gcm-adapter.js — GCM (General Circulation Model) Adapter
-// Generates validated scenario files for compatible GCMs.
-// Does NOT pretend to run a 3D climate simulation.
+// js/visualization/gcm-adapter.js — GCM Scenario Exporter
+// Generates scenario configuration files for compatible GCMs.
+// This is an EXPORTER only — it does NOT run simulations, does NOT execute
+// 3D climate models, and does NOT generate NetCDF results.
+// Generated files must be submitted to the actual GCM backend separately.
 // Reference: ROCKE-3D (NASA GISS), ExoCAM, LMD-G
 
 export class GCMAdapter {

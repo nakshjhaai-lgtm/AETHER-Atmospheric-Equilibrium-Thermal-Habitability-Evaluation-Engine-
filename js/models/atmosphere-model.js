@@ -25,13 +25,22 @@ export class AtmosphereModel {
 
   _resolveGasComposition(params) {
     if (params.preset && params.preset !== 'custom' && ATMOSPHERE_PRESETS[params.preset]) {
-      return { ...ATMOSPHERE_PRESETS[params.preset].gases };
+      const preset = ATMOSPHERE_PRESETS[params.preset];
+      // Use preset's greenhouse_optical_depth if not explicitly overridden
+      if (params.greenhouse_optical_depth == null && preset.greenhouse_optical_depth != null) {
+        this.legacyOpticalDepth = preset.greenhouse_optical_depth;
+      }
+      return { ...preset.gases };
     }
     if (params.gas_mixing_ratios && Object.keys(params.gas_mixing_ratios).length > 0) {
       return { ...params.gas_mixing_ratios };
     }
     // Default to Earth
-    return { ...ATMOSPHERE_PRESETS.earth_n2_o2.gases };
+    const earth = ATMOSPHERE_PRESETS.earth_n2_o2;
+    if (params.greenhouse_optical_depth == null && earth.greenhouse_optical_depth != null) {
+      this.legacyOpticalDepth = earth.greenhouse_optical_depth;
+    }
+    return { ...earth.gases };
   }
 
   _computeMeanMolecularWeight() {

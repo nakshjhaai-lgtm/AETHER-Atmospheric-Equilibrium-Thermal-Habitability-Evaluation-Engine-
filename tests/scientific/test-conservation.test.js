@@ -7,6 +7,10 @@ import { UncertaintyEngine } from '../../js/solvers/uncertainty.js';
 import { StarModel } from '../../js/models/star-model.js';
 import { PlanetModel } from '../../js/models/planet-model.js';
 import { AtmosphereModel } from '../../js/models/atmosphere-model.js';
+import { ASTRO_CONSTANTS } from '../../js/schema/constants.js';
+
+// Compute Earth escape velocity from fundamental constants for consistent test expectations
+const EARTH_V_ESC_COMPUTED = Math.sqrt(2 * ASTRO_CONSTANTS.G * ASTRO_CONSTANTS.EARTH_MASS_KG / ASTRO_CONSTANTS.EARTH_RADIUS_M) / 1000;
 
 describe('Physical Conservation Laws', () => {
   it('Stefan-Boltzmann: luminosity ∝ R²T⁴', () => {
@@ -32,8 +36,10 @@ describe('Physical Conservation Laws', () => {
     for (let m = 0.1; m <= 10; m += 1) {
       for (let r = 0.5; r <= 2.0; r += 0.5) {
         const planet = new PlanetModel({ mass_earth: m, radius_earth: r });
-        const expectedVe = 11.2 * Math.sqrt(m / r);
-        expect(planet.escapeVelocityKms).toBeCloseTo(expectedVe, 1);
+        // Formula: v_esc = EARTH_V_ESC_COMPUTED × √(M/R)
+        // Use computed Earth v_esc (from G, M_Earth, R_Earth) for consistency
+        const expectedVe = EARTH_V_ESC_COMPUTED * Math.sqrt(m / r);
+        expect(planet.escapeVelocityKms).toBeCloseTo(expectedVe, 2);
       }
     }
   });

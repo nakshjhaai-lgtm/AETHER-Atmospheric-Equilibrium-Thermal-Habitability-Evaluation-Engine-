@@ -12,11 +12,11 @@ describe('ReducedClimateSolver', () => {
     const star = new StarModel({ effective_temperature_k: 5780, mass_solar: 1.0, radius_solar: 1.0 });
     const orbit = { semiMajorAxisAU: 1.0, semiMajorAxisM: 1.496e11, eccentricity: 0, getMeanInsolation: () => 1.0, isInHabitableZone: () => true, orbitalDistances: { perihelion_au: 1, aphelion_au: 1 } };
     const planet = new PlanetModel({ mass_earth: 1.0, radius_earth: 1.0 });
-    const atmo = new AtmosphereModel({ total_surface_pressure_pa: 101325, preset: 'earth_n2_o2', greenhouse_optical_depth: 0.85 });
+    const atmo = new AtmosphereModel({ total_surface_pressure_pa: 101325, preset: 'earth_n2_o2' });
     const surface = { albedo: 0.30, emissivity: 0.95, validate: () => [] };
 
     const result = solver.solve({ star, orbit, planet, atmosphere: atmo, surface });
-    expect(result.surface_temperature_k).toBeGreaterThan(250);
+    expect(result.surface_temperature_k).toBeGreaterThan(273);
     expect(result.surface_temperature_k).toBeLessThan(310);
     expect(result.climate_regime.regime).toBe('warm_temperate');
   });
@@ -60,10 +60,14 @@ describe('StarModel', () => {
   });
 
   it('computes habitable zone boundaries', () => {
+    // Kopparapu et al. (2013) polynomial boundaries for Sun-like star
+    // At T*=0 (Sun), S_eff = seffSun, and d = sqrt(L/S_eff)
+    // Runaway greenhouse: S_eff_sun = 1.107 → d = sqrt(1/1.107) ≈ 0.950 AU
+    // Maximum greenhouse: S_eff_sun = 0.356 → d = sqrt(1/0.356) ≈ 1.677 AU
     const star = new StarModel({ effective_temperature_k: 5780, radius_solar: 1.0 });
     const hz = star.getHabitableZone();
-    expect(hz.runawayGreenhouse).toBeCloseTo(0.84, 1);
-    expect(hz.maximumGreenhouse).toBeCloseTo(1.67, 1);
+    expect(hz.runawayGreenhouse).toBeCloseTo(0.950, 1);
+    expect(hz.maximumGreenhouse).toBeCloseTo(1.677, 1);
   });
 });
 
