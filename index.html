@@ -27,14 +27,18 @@
       </span>
     </div>
 
-    <nav class="mode-pills" aria-label="Target mode selection">
-      <button class="mode-pill mode-pill--active" data-mode="astrobiology" type="button">
-        <span class="mode-pill__swatch mode-pill__swatch--cyan"></span>
-        Astrobiology
+    <nav class="mode-pills" aria-label="Experience level selection">
+      <button class="mode-pill mode-pill--active" data-mode="beginner" type="button">
+        <span class="mode-pill__swatch" style="background:var(--cyan)"></span>
+        Beginner
       </button>
-      <button class="mode-pill" data-mode="geophysics" type="button">
-        <span class="mode-pill__swatch mode-pill__swatch--rust"></span>
-        Planetary Geophysics
+      <button class="mode-pill" data-mode="advanced" type="button">
+        <span class="mode-pill__swatch" style="background:var(--rust)"></span>
+        Advanced
+      </button>
+      <button class="mode-pill" data-mode="expert" type="button">
+        <span class="mode-pill__swatch" style="background:var(--gold)"></span>
+        Expert
       </button>
     </nav>
 
@@ -147,6 +151,13 @@
 
     <!-- RIGHT: CONTROL PANEL -->
     <aside class="control-panel" aria-label="Simulation controls">
+      <!-- Mode selector: Beginner / Advanced / Expert -->
+      <nav class="mode-tabs" role="tablist" aria-label="Experience level">
+        <button class="mode-tab mode-tab--active" data-mode="beginner" type="button" role="tab">Beginner</button>
+        <button class="mode-tab" data-mode="advanced" type="button" role="tab">Advanced</button>
+        <button class="mode-tab" data-mode="expert" type="button" role="tab">Expert</button>
+      </nav>
+
       <nav class="tab-bar" role="tablist">
         <button class="tab tab--active" data-tab="stellar" role="tab" aria-selected="true" type="button">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
@@ -156,6 +167,10 @@
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12c3-3 6 3 9 0s6-3 9 0"/></svg>
           Planetary
         </button>
+        <button class="tab" data-tab="atmosphere" role="tab" type="button" class="advanced-only">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 3v18M3 12h18M5.6 5.6l12.8 12.8"/></svg>
+          Atmosphere
+        </button>
         <button class="tab" data-tab="metrics" role="tab" type="button">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15l3-3 3 3 5-6"/></svg>
           Metrics
@@ -163,6 +178,10 @@
         <button class="tab" data-tab="devices" role="tab" type="button">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2" width="12" height="20" rx="2"/><path d="M11 18h2"/></svg>
           Devices
+        </button>
+        <button class="tab expert-only" data-tab="expert" role="tab" type="button">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M8 8l4 4-4 4M16 8h-4"/></svg>
+          Expert
         </button>
       </nav>
 
@@ -367,6 +386,129 @@
                 <span class="model-limitation__text">Climate regime is based on surface temperature only. Atmospheric composition, pressure, water availability, UV radiation, magnetic fields, and geological activity are not modeled.</span>
               </div>
             </div>
+          </div>
+
+          <!-- QHF Result (rendered by ResultRenderer) -->
+          <div class="card advanced-only" id="qhf-result-card" style="display:none;">
+            <div class="card__head">
+              <h3>Habitability Assessment</h3>
+              <span class="card__sub">QHF viability analysis</span>
+            </div>
+            <div id="qhf-result-body"></div>
+          </div>
+        </section>
+
+        <!-- ===== TAB: ATMOSPHERE ===== -->
+        <section class="tab-panel advanced-only" data-panel="atmosphere">
+          <div class="card">
+            <div class="card__head">
+              <div>
+                <h3>Atmosphere Preset</h3>
+                <span class="card__sub casual-hint">Choose a known atmosphere or configure manually</span>
+              </div>
+            </div>
+            <div class="preset-row" id="atmo-preset-row">
+              <button class="chip chip--active" data-atmo-preset="earth_n2_o2" type="button">Earth N₂/O₂</button>
+              <button class="chip" data-atmo-preset="mars_co2" type="button">Mars CO₂</button>
+              <button class="chip" data-atmo-preset="venus_co2" type="button">Venus CO₂</button>
+              <button class="chip" data-atmo-preset="titan_n2_ch4" type="button">Titan N₂/CH₄</button>
+              <button class="chip" data-atmo-preset="early_earth_co2_ch4" type="button">Early Earth</button>
+              <button class="chip" data-atmo-preset="h2_dominated" type="button">H₂-rich</button>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card__head">
+              <div>
+                <h3>Surface Pressure</h3>
+                <span class="card__sub casual-hint">Total atmospheric pressure at the surface</span>
+              </div>
+              <span class="card__sub">P<sub>surf</sub></span>
+            </div>
+            <div class="slider-block">
+              <div class="slider-block__row">
+                <input type="range" id="a-pressure" min="0.001" max="100" step="0.01" value="1.013" aria-label="Surface pressure in bar" />
+                <div class="num-badge" data-for="a-pressure" data-unit=" bar">1.013</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card__head">
+              <div>
+                <h3>Gas Composition</h3>
+                <span class="card__sub">Mole fractions (must sum to ~1.0)</span>
+              </div>
+              <span class="card__sub" id="gas-sum-badge">Σ = 1.000</span>
+            </div>
+            <div class="gas-grid" id="gas-grid">
+              <div class="gas-row"><label>N₂</label><input type="range" id="gas-N2" min="0" max="1" step="0.001" value="0.7808" /><span class="gas-val" id="gas-val-N2">0.7808</span></div>
+              <div class="gas-row"><label>O₂</label><input type="range" id="gas-O2" min="0" max="1" step="0.001" value="0.2095" /><span class="gas-val" id="gas-val-O2">0.2095</span></div>
+              <div class="gas-row"><label>CO₂</label><input type="range" id="gas-CO2" min="0" max="1" step="0.0001" value="0.00042" /><span class="gas-val" id="gas-val-CO2">0.000420</span></div>
+              <div class="gas-row"><label>H₂O</label><input type="range" id="gas-H2O" min="0" max="1" step="0.001" value="0" /><span class="gas-val" id="gas-val-H2O">0.0000</span></div>
+              <div class="gas-row"><label>CH₄</label><input type="range" id="gas-CH4" min="0" max="1" step="0.000001" value="0.000002" /><span class="gas-val" id="gas-val-CH4">0.000002</span></div>
+              <div class="gas-row"><label>Ar</label><input type="range" id="gas-Ar" min="0" max="1" step="0.001" value="0.0093" /><span class="gas-val" id="gas-val-Ar">0.0093</span></div>
+            </div>
+            <div class="model-limitation" id="gas-warning" style="display:none;">
+              <span class="model-limitation__icon">⚠️</span>
+              <span class="model-limitation__text">Gas fractions do not sum to 1.0. Values will be renormalized.</span>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card__head">
+              <div>
+                <h3>Biological Target</h3>
+                <span class="card__sub casual-hint">What organism or condition to evaluate</span>
+              </div>
+            </div>
+            <div class="preset-row" id="biology-target-row">
+              <button class="chip chip--active" data-target="surface_liquid_water" type="button">Surface Water</button>
+              <button class="chip" data-target="methanogen" type="button">Methanogen</button>
+              <button class="chip" data-target="cyanobacteria" type="button">Cyanobacteria</button>
+              <button class="chip" data-target="thermophile" type="button">Thermophile</button>
+              <button class="chip" data-target="psychrophile" type="button">Psychrophile</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- ===== TAB: SCENARIO (Expert) ===== -->
+        <section class="tab-panel expert-only" data-panel="scenario">
+          <div class="card">
+            <div class="card__head">
+              <h3>Scenario JSON Editor</h3>
+              <span class="card__sub">Import / export full scenario configuration</span>
+            </div>
+            <textarea id="scenario-json" class="scenario-editor" rows="16" spellcheck="false" placeholder="Paste a scenario JSON here, or click Export to generate one from current settings."></textarea>
+            <div class="twin-actions" style="margin-top:8px;">
+              <button class="action-btn" id="btn-export-scenario" type="button">
+                <span>Export Current</span>
+              </button>
+              <button class="action-btn" id="btn-import-scenario" type="button">
+                <span>Import &amp; Apply</span>
+              </button>
+            </div>
+            <div id="scenario-status" class="sensor-note" style="margin-top:8px;"></div>
+          </div>
+
+          <div class="card">
+            <div class="card__head">
+              <h3>Model Fidelity</h3>
+              <span class="card__sub">Select solver fidelity level</span>
+            </div>
+            <div class="preset-row" id="fidelity-row">
+              <button class="chip chip--active" data-fidelity="reduced" type="button">Reduced</button>
+              <button class="chip" data-fidelity="column_approximation" type="button">Column (Experimental)</button>
+            </div>
+            <p class="sensor-note">Reduced: instant client-side. Column: experimental 1D radiative-convective approximation (Python backend required).</p>
+          </div>
+
+          <div class="card">
+            <div class="card__head">
+              <h3>Result Provenance</h3>
+              <span class="card__sub">Full audit trail of last computation</span>
+            </div>
+            <pre id="provenance-json" class="scenario-editor" style="max-height:200px;overflow:auto;font-size:10px;">No computation yet.</pre>
           </div>
         </section>
 

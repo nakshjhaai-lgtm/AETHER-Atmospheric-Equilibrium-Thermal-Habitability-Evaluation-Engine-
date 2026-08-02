@@ -187,7 +187,7 @@ uvicorn python.api.main:app --reload --port 8000
 
 | Feature | Status |
 |---|---|
-| Reduced 1D grey atmosphere | ✅ Working, validated against Earth/Mars/Venus |
+| Reduced 1D grey atmosphere | ✅ Internally benchmarked against Earth/Mars/Venus reference scenarios. Not externally validated against established climate codes. |
 | QHF surface liquid water | ✅ Working |
 | QHF methanogen viability | ✅ Working (tolerance-based, not energy-model validated) |
 | QHF other organisms | ✅ Working (tolerance ranges from literature) |
