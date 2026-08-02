@@ -2,14 +2,15 @@
 // ---------------------------------------------------------------------------
 // Binds DOM → state → math → shader/audio pipeline.
 
-import { MathEngine, STELLAR_PRESETS, CORE_PRESETS, ASTRO_CONSTANTS, BASELINES, ATMOSPHERE_PRESETS, ORGANISM_MODELS } from './schema/constants.js';
+import { MathEngine } from './math-engine.js';
+import { STELLAR_PRESETS, CORE_PRESETS, ASTRO_CONSTANTS, BASELINES, ATMOSPHERE_PRESETS, ORGANISM_MODELS } from './schema/constants.js';
 import { ModelAdapter } from './models/model-adapter.js';
 import { ReducedClimateSolver } from './solvers/reduced-climate.js';
 import { QHFSolver } from './solvers/qhf.js';
 import { ScenarioValidator } from './schema/validate-scenario.js';
 import { ModeController } from './ui/mode-controller.js';
 import { ResultRenderer } from './ui/result-renderer.js';
-import { bindModeSelector, bindAtmosphereControls, bindBiologyTarget, bindScenarioEditor, renderQHFResult } from './ui/integration.js';
+import { bindModeSelector, bindAtmosphereControls, bindBiologyTarget, bindScenarioEditor, renderQHFResult, applyAtmospherePreset } from './ui/integration.js';
 import { ShaderEngine } from './shader-engine.js';
 import { AudioEngine, freqToNote } from './audio-engine.js';
 
@@ -57,7 +58,7 @@ const state = {
     gEarth: 1.0, escapeNorm: 1.0, tEq: 255, tSurf: 288, climate: null
   },
   devices: { gyro: false, audio: false, haptics: true, night: false },
-  ui: { activeTab:'stellar', drawerOpen:false, distanceUnit:'AU', mobileDockOpen:false },
+  ui: { activeTab:'stellar', drawerOpen:false, distanceUnit:'AU', mobileDockOpen:false, calibrationDismissed:false },
   _dirty: { ui:true, lastUI:0, lastPhysics:0, lastScope:0, _lastClimate:null }
 };
 
@@ -87,7 +88,7 @@ window.addEventListener('DOMContentLoaded', () => {
   bindToggles(); bindChips(); bindOverlays(); bindDialog();
   bindDrawer(); bindUnitToggle(); bindReticle();
   bindVisibility(); bindMobileDock();
-  bindDisclaimer(); bindOnboarding(); bindReset(); bindShare();
+  bindDisclaimer(); bindOnboarding(); bindReset(); bindShare(); bindCalibrationNotice();
   bindModeSelector(modeController, state);
   bindAtmosphereControls(state, refs);
   bindBiologyTarget(state, { get value() { return currentBiologyTarget; }, set value(v) { currentBiologyTarget = v; } });
@@ -310,6 +311,7 @@ function bindSliders() {
       } else {
         syncSliderToState(id, parseFloat(el.value));
       }
+      state.ui.calibrationDismissed = false;
       state._dirty.ui = true;
     });
   });
@@ -630,6 +632,16 @@ function bindDisclaimer() {
   });
 }
 
+function bindCalibrationNotice() {
+  const dismiss = document.getElementById('calibration-dismiss');
+  if (!dismiss) return;
+  dismiss.addEventListener('click', () => {
+    state.ui.calibrationDismissed = true;
+    const notice = document.getElementById('calibration-notice');
+    if (notice) notice.style.display = 'none';
+  });
+}
+
 // ---------- Onboarding Overlay ----------
 function bindOnboarding() {
   const overlay = document.getElementById('onboarding-overlay');
@@ -687,6 +699,10 @@ function bindReset() {
     state.planet.mass = 1.00; refs.sliders['p-mass'].value = 1.00; setSliderFill(refs.sliders['p-mass']);
     state.planet.albedo = 0.30; refs.sliders['p-albedo'].value = 0.30; setSliderFill(refs.sliders['p-albedo']);
     state.planet.tau = 1.50; refs.sliders['p-tau'].value = 1.50; setSliderFill(refs.sliders['p-tau']);
+    applyAtmospherePreset('earth_n2_o2', state, refs);
+    document.querySelectorAll('[data-atmo-preset]').forEach(c => {
+      c.classList.toggle('chip--active', c.dataset.atmoPreset === 'earth_n2_o2');
+    });
     setActivePreset('earth');
     refs.hudTarget.textContent = 'EARTH SYSTEM';
     state._dirty.ui = true;
@@ -775,7 +791,7 @@ function checkCalibrationRange() {
 
   const notice = document.getElementById('calibration-notice');
   if (!notice) return;
-  if (warnings.length > 0) {
+  if (warnings.length > 0 && !state.ui.calibrationDismissed) {
     notice.querySelector('span').innerHTML = '⚠️ <b>Outside calibrated range</b> — ' + warnings[0] + (warnings.length > 1 ? ' (+' + (warnings.length - 1) + ' more)' : '') + '. Results are extrapolated and may be unreliable.';
     notice.style.display = 'flex';
   } else {
