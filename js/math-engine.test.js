@@ -2,7 +2,7 @@
 // Run: open this file in a browser with a test runner, or use Node with ES module support.
 // ---------------------------------------------------------------------------
 
-import { MathEngine, STELLAR_PRESETS, CORE_PRESETS, ASTRO_CONSTANTS, BASELINES, KOPPARAPU_COEFFS } from './math-engine.js';
+import { MathEngine, ASTRO_CONSTANTS, BASELINES, KOPPARAPU_COEFFS, STELLAR_PRESETS, CORE_PRESETS } from '../js/math-engine.js';
 
 let passed = 0;
 let failed = 0;

@@ -2,7 +2,10 @@
 // ---------------------------------------------------------------------------
 // Binds DOM → state → math → shader/audio pipeline.
 
-import { MathEngine, STELLAR_PRESETS, CORE_PRESETS, ASTRO_CONSTANTS, BASELINES } from './math-engine.js';
+import { MathEngine, STELLAR_PRESETS, CORE_PRESETS, ASTRO_CONSTANTS, BASELINES } from './schema/constants.js';
+import { ModelAdapter } from './models/model-adapter.js';
+import { ReducedClimateSolver } from './solvers/reduced-climate.js';
+import { QHFSolver } from './solvers/qhf.js';
 import { ShaderEngine } from './shader-engine.js';
 import { AudioEngine, freqToNote } from './audio-engine.js';
 
@@ -60,6 +63,9 @@ const $$ = (s, r=document) => [...r.querySelectorAll(s)];
 const refs = {};
 
 let shader, audio, rafId, running = true;
+const adapter = new ModelAdapter();
+const climateSolver = new ReducedClimateSolver();
+const qhfSolver = new QHFSolver();
 
 window.addEventListener('DOMContentLoaded', () => {
   cacheRefs();
@@ -765,30 +771,35 @@ function checkCalibrationRange() {
 
 // ---------- Physics ----------
 function updatePhysics() {
-  state.star.lum = MathEngine.stellarLuminosity(state.star.rstar, state.star.teff);
-  const dens = MathEngine.bulkDensity(state.planet.radius, state.planet.mass, state.planet.densityMul);
-  const sp = MathEngine.structuralParams(state.planet.mass, state.planet.radius);
-  state.planet.density_cgs = dens.gcm3;
-  state.planet.vesc_kms = sp.vesc_kms; state.planet.g_ms2 = sp.g_ms2;
-  state.planet.gEarth = sp.gEarth; state.planet.escapeNorm = sp.escapeEarthUnits;
-  const rt = MathEngine.radiativeTransfer(state.star.teff, state.star.rstar,
-    state.planet.distance, state.planet.albedo, state.planet.tau);
-  state.planet.tEq = rt.equilibriumTemp; state.planet.tSurf = rt.surfaceTemp;
-  const hz = MathEngine.habitableZone(state.star.teff, state.star.lum);
-  state.planet.climate = MathEngine.climateState(state.planet.tSurf, state.planet.tau, state.planet.distance, hz);
-  // Correct thresholds per spec:
-  // Glaciated Deep Freeze if τ<0.2 AND far out (beyond earlyMars or outer HZ)
-  // Runaway if τ>6 OR distance < runawayGreenhouse boundary
-  const farOut = hz.earlyMars && state.planet.distance > hz.earlyMars;
-  const closeIn = hz.runawayGreenhouse && state.planet.distance < hz.runawayGreenhouse;
-  if (state.planet.tau < 0.2 && farOut) state.planet.climate = {
-    label:'Glaciated Deep Freeze', sub:'τ≈0 vacuum & distant orbit', color:'blue',
-    status:'Max Greenhouse Frost Boundary'
+  // Build domain models via adapter
+  adapter.buildFromLegacyState(state);
+
+  // Run reduced climate solver
+  const climateResult = climateSolver.solve(adapter);
+
+  // Update state from solver output
+  state.star.lum = adapter.star?.luminositySolar ?? MathEngine.stellarLuminosity(state.star.rstar, state.star.teff);
+  state.planet.density_cgs = adapter.planet?.densityGcm3 ?? 5.51;
+  state.planet.vesc_kms = adapter.planet?.escapeVelocityKms ?? 11.2;
+  state.planet.g_ms2 = adapter.planet?.gravityMs2 ?? 9.81;
+  state.planet.gEarth = adapter.planet?.gravityEarth ?? 1.0;
+  state.planet.escapeNorm = adapter.planet?.escapeVelocityEarthUnits ?? 1.0;
+  state.planet.tEq = climateResult.equilibrium_temperature_k;
+  state.planet.tSurf = climateResult.surface_temperature_k;
+  state.planet.climate = {
+    label: climateResult.climate_regime?.label ?? 'Unknown',
+    sub: climateResult.climate_regime?.description ?? '',
+    color: climateResult.climate_regime?.color ?? 'cyan',
+    status: climateResult.climate_regime?.label ?? '',
+    confidence: 'Low — atmospheric composition not modeled',
+    surface_water: climateResult.surface_water
   };
-  if (state.planet.tau > 6.0 || closeIn) state.planet.climate = {
-    label:'Runaway Greenhouse Phase', sub:'Superheated atmospheric collapse', color:'gold',
-    status:'IR-Driven Water Loss Zone'
-  };
+  state.planet.climateResult = climateResult;
+  state.planet.hz = adapter.star?.getHabitableZone() ?? MathEngine.habitableZone(state.star.teff, state.star.lum);
+
+  // Run QHF for surface liquid water target
+  state.planet.qhfResult = qhfSolver.solve(climateResult, { target_type: 'surface_liquid_water' });
+
   shader.setPlanetState({
     surfaceTemp: state.planet.tSurf, opticalDepth: state.planet.tau, mode: state.mode,
     starColorHex: state.star.preset ? STELLAR_PRESETS[state.star.preset].color : '#fff3c2',
