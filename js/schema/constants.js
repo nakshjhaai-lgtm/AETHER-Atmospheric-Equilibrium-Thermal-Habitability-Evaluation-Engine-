@@ -52,6 +52,7 @@ export const ATMOSPHERE_PRESETS = {
     observation: 'measured',
     total_pressure_pa: 101325,
     gases: { N2: 0.7808, O2: 0.2095, Ar: 0.0093, CO2: 0.00042, H2O: 0.0, CH4: 1.8e-6, N2O: 3.3e-7, O3: 7e-8 },
+    greenhouse_optical_depth: 1.50,
     description: 'Modern Earth atmosphere. H₂O varies by humidity setting.'
   },
   mars_co2: {
@@ -60,6 +61,7 @@ export const ATMOSPHERE_PRESETS = {
     observation: 'measured',
     total_pressure_pa: 636,
     gases: { CO2: 0.9532, N2: 0.027, Ar: 0.016, O2: 0.0013, CO: 0.0008, H2O: 2.1e-4 },
+    greenhouse_optical_depth: 0.40,
     description: 'Modern Mars atmosphere. Very thin CO₂-dominated.'
   },
   venus_co2: {
@@ -68,6 +70,7 @@ export const ATMOSPHERE_PRESETS = {
     observation: 'measured',
     total_pressure_pa: 9200000,
     gases: { CO2: 0.965, N2: 0.035, SO2: 1.5e-4, H2O: 2e-5, Ar: 7e-5 },
+    greenhouse_optical_depth: 50.0,
     description: 'Venus surface atmosphere. Extreme pressure and temperature.'
   },
   titan_n2_ch4: {
@@ -76,6 +79,7 @@ export const ATMOSPHERE_PRESETS = {
     observation: 'measured',
     total_pressure_pa: 146700,
     gases: { N2: 0.944, CH4: 0.0565, H2: 0.001, Ar: 0.0003, CO: 0.00005 },
+    greenhouse_optical_depth: 3.0,
     description: 'Titan atmosphere. Methane cycle and haze layers.'
   },
   early_earth_co2_ch4: {
@@ -84,6 +88,7 @@ export const ATMOSPHERE_PRESETS = {
     observation: 'estimated',
     total_pressure_pa: 101325,
     gases: { CO2: 0.10, CH4: 0.01, N2: 0.85, H2O: 0.04, H2: 0.001, Ar: 0.01 },
+    greenhouse_optical_depth: 2.5,
     description: 'Archean Earth (~3.5 Ga). Reduced atmosphere with greenhouse warming.'
   },
   h2_dominated: {
@@ -92,6 +97,7 @@ export const ATMOSPHERE_PRESETS = {
     observation: 'estimated',
     total_pressure_pa: 10132500,
     gases: { H2: 0.85, He: 0.10, CH4: 0.03, N2: 0.01, H2O: 0.005, NH3: 0.005 },
+    greenhouse_optical_depth: 5.0,
     description: 'H₂-dominated atmosphere. Important for early Earth and sub-Neptunes.'
   }
 };
@@ -230,5 +236,5 @@ export const ORGANISM_MODELS = {
 };
 
 // AETHER version
-export const VERSION = '2.0.0';
-export const CODE_VERSION = 'AETHER-2026-08-02';
+export const VERSION = '3.0.0-alpha.1';
+export const CODE_VERSION = 'AETHER-3.0.0-alpha.1';

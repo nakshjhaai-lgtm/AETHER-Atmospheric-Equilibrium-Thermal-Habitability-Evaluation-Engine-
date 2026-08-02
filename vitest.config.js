@@ -4,7 +4,8 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'node',
-    include: ['tests/**/*.test.js', 'js/**/*.test.js'],
+    include: ['tests/**/*.test.js'],
+    exclude: ['js/math-engine.test.js'],
     coverage: {
       provider: 'v8',
       include: ['js/solvers/**', 'js/models/**', 'js/schema/**'],

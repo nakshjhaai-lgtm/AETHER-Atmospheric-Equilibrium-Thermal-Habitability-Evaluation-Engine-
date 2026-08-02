@@ -34,10 +34,19 @@ export class QHFSolver {
   }
 
   _buildHabitatState(climateResult) {
+    // Derive pressure in Pascals from climate result
+    // surface_pressure_bar is in bar; convert to Pa
+    const pressureBar = climateResult.surface_pressure_bar ?? 1.01325;
+    const pressurePa = pressureBar * 1e5;
+
+    // Water activity: 0.95 if liquid water is possible, else 0.0
+    // This is a rough proxy — a real model would use actual water inventory
+    const waterActivity = climateResult.surface_water?.liquid_possible ? 0.95 : 0.0;
+
     return {
       temperature_k: climateResult.surface_temperature_k,
-      pressure_pa: climateResult.surface_pressure_bar * 1e5,
-      water_activity: climateResult.surface_water?.liquid_possible ? 0.95 : 0.0,
+      pressure_pa: pressurePa,
+      water_activity: waterActivity,
       ph: 7.0, // default neutral (not modeled in reduced engine)
       salinity_m: 0.5, // default (not modeled in reduced engine)
       uv_w_m2: climateResult.radiation?.surface_uv_w_m2 ?? 5.0,

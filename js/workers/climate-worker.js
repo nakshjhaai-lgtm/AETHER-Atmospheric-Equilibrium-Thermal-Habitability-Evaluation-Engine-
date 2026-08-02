@@ -1,13 +1,10 @@
 // js/workers/climate-worker.js — Web Worker for climate/QHF calculations
 // Runs off the main thread to keep UI responsive.
 // Receives scenario → runs solvers → returns structured results.
-
-// Worker context — import scripts with relative URLs
-importScripts('../solvers/reduced-climate.js', '../solvers/qhf.js', '../solvers/uncertainty.js');
-
-// Note: In a real worker, ES module imports don't work directly.
-// This file would need to be bundled or use importScripts.
-// For now, we use a structured message protocol.
+// 
+// All solver logic is inlined here to avoid ES module import issues in workers.
+// For production, use: new Worker('./js/workers/climate-worker.js', { type: 'module' })
+// and convert to ES module imports.
 
 const solverState = {
   running: false,

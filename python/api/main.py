@@ -19,16 +19,21 @@ from pydantic import BaseModel, Field
 
 app = FastAPI(
     title="AETHER Scientific API",
-    version="2.0.0",
+    version="3.0.0-alpha.1",
     description="Expert-level planetary climate and habitability calculations"
 )
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["*"],  # TODO: restrict in production
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Job limits
+MAX_MONTE_CARLO_SAMPLES = 50000
+MAX_JOB_RUNTIME_SECONDS = 300
+MAX_CONCURRENT_JOBS = 10
 
 # In-memory job store (replace with Redis/DB in production)
 jobs = {}
@@ -59,7 +64,7 @@ class PlanetInput(BaseModel):
 
 class AtmosphereInput(BaseModel):
     total_surface_pressure_pa: float = Field(..., ge=0, le=10000000)
-    gas_mixing_ratios: dict = {}
+    gas_mixing_ratios: dict = Field(default_factory=dict)
     preset: Optional[str] = None
     relative_humidity_surface: float = 0.6
     greenhouse_optical_depth: Optional[float] = None
@@ -127,7 +132,7 @@ async def validate_scenario(scenario: ScenarioPayload):
 async def submit_job(scenario: ScenarioPayload, background_tasks: BackgroundTasks):
     """Submit a climate/habitability calculation job."""
     job_id = str(uuid.uuid4())[:8]
-    scenario_hash = hashlib.sha256(json.dumps(scenario.dict(), default=str).encode()).hexdigest()[:12]
+    scenario_hash = hashlib.sha256(json.dumps(scenario.model_dump(), default=str).encode()).hexdigest()[:12]
 
     job = {
         "id": job_id,
@@ -176,10 +181,10 @@ async def list_models():
     """List available scientific models."""
     return {
         "models": [
-            {"id": "reduced", "name": "Reduced Climate", "fidelity": "reduced", "description": "1D grey atmosphere, fast analytic"},
-            {"id": "column", "name": "1D Radiative-Convective", "fidelity": "column", "description": "1D column model with convective adjustment"},
-            {"id": "photochemical", "name": "1D Photochemical", "fidelity": "photochemical", "description": "1D column + chemistry network"},
-            {"id": "high_fidelity", "name": "High-Fidelity 1D", "fidelity": "high_fidelity", "description": "Full 1D with all processes"}
+            {"id": "reduced", "name": "Reduced Climate", "fidelity": "reduced", "description": "1D grey atmosphere, fast analytic. Validated for educational use."},
+            {"id": "column_approximation", "name": "1D Column Approximation", "fidelity": "column_approximation", "description": "EXPERIMENTAL: 1D radiative-convective approximation. Not validated against established models. Use with caution."},
+            {"id": "photochemical", "name": "1D Photochemical (Planned)", "fidelity": "photochemical", "description": "NOT YET IMPLEMENTED: Will require Photochem or equivalent backend."},
+            {"id": "3d_gcm", "name": "3D GCM Exporter", "fidelity": "3d_gcm", "description": "Generates scenario files for ROCKE-3D/ExoCAM. Does NOT run the GCM locally."}
         ]
     }
 
@@ -224,12 +229,12 @@ async def run_job(job_id: str, scenario: ScenarioPayload):
     try:
         fidelity = scenario.model_fidelity
 
-        if fidelity in ("reduced", "column"):
-            result = await run_reduced_climate(scenario, job)
-        elif fidelity == "high_fidelity":
-            result = await run_high_fidelity(scenario, job)
+        if fidelity in ("reduced", "column_approximation"):
+            result = await run_column_approximation(scenario, job)
+        elif fidelity in ("photochemical", "3d_gcm"):
+            raise ValueError(f"Fidelity '{fidelity}' is not yet implemented. Use 'reduced' or 'column_approximation'.")
         else:
-            result = await run_reduced_climate(scenario, job)
+            result = await run_column_approximation(scenario, job)
 
         # Run QHF if biology target specified
         if scenario.biology_target:
@@ -276,8 +281,10 @@ async def run_reduced_climate(scenario: ScenarioPayload, job: dict) -> dict:
     d_m = orbit.semi_major_axis_au * AU
     flux = L * L_sun / (4 * np.pi * d_m ** 2)
 
-    # Equilibrium temperature
-    t_eq = star.effective_temperature_k * np.sqrt(star.radius_solar * 696340 / (orbit.semi_major_axis_au * 1.496e8) / 2) * (1 - surface.albedo) ** 0.25
+    # Equilibrium temperature (Stefan-Boltzmann)
+    # T_eq = T_eff × (R_star/d)^(1/2) × (1-A)^(1/4)
+    r_ratio = (star.radius_solar * 696340.0) / (orbit.semi_major_axis_au * 1.496e8)  # R_star_km / d_km
+    t_eq = star.effective_temperature_k * np.sqrt(r_ratio / 2.0) * (1 - surface.albedo) ** 0.25
 
     # Greenhouse warming
     tau = atmo.greenhouse_optical_depth if atmo.greenhouse_optical_depth is not None else 0.85
@@ -310,11 +317,17 @@ async def run_reduced_climate(scenario: ScenarioPayload, job: dict) -> dict:
         "gravity_earth": float(planet.mass_earth / planet.radius_earth ** 2)
     }
 
-async def run_high_fidelity(scenario: ScenarioPayload, job: dict) -> dict:
-    """Run the high-fidelity 1D radiative-convective model."""
+async def run_column_approximation(scenario: ScenarioPayload, job: dict) -> dict:
+    """Run the 1D radiative-convective column approximation.
+    
+    WARNING: This is an experimental simplified column model.
+    It is NOT validated against established radiative-convective codes.
+    Results should be treated as illustrative, not authoritative.
+    For validated results, use an established model (e.g., petitRADTRANS, CHIMERA).
+    """
     import numpy as np
 
-    job["logs"].append("Running high-fidelity 1D model")
+    job["logs"].append("Running 1D column approximation (experimental)")
 
     n_layers = scenario.solver.n_vertical_layers if scenario.solver else 30
     max_iter = scenario.solver.max_iterations if scenario.solver else 100
@@ -454,7 +467,7 @@ async def run_uncertainty(scenario: ScenarioPayload, job: dict) -> dict:
     suitabilities = []
     for i in range(n_samples):
         # Create perturbed scenario
-        scenario_dict = scenario.dict()
+        scenario_dict = scenario.model_dump()
         for var, values in samples.items():
             if var == "surface_pressure_pa":
                 scenario_dict["atmosphere"]["total_surface_pressure_pa"] = float(values[i])

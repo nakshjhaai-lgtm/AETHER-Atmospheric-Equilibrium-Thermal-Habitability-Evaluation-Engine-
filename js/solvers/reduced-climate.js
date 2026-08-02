@@ -105,8 +105,15 @@ export class ReducedClimateSolver {
   }
 
   _equilibriumTemperature(teff, rStarSolar, distanceAU, albedo) {
-    const rel = (rStarSolar * ASTRO_CONSTANTS.SOLAR_RADIUS_KM) / (distanceAU * ASTRO_CONSTANTS.AU_TO_KM);
-    return teff * Math.sqrt(rel / 2.0) * Math.pow(Math.max(0, 1 - albedo), 0.25);
+    // Stefan-Boltzmann equilibrium temperature from first-principles energy balance:
+    //   Planet absorbs:  L(1-A)/(4πd²) × πR_p²
+    //   Planet emits:    4πR_p² σ T_eq⁴
+    //   With L = 4πR_star²σT_eff⁴, cancel R_p² and 4π:
+    //     R_star² T_eff⁴ / d²  =  T_eq⁴ / (1-A)
+    //     T_eq = T_eff × (R_star/d)^(1/2) × (1-A)^(1/4)
+    // Both R_star and d must be in the same length units.
+    const ratio = (rStarSolar * ASTRO_CONSTANTS.SOLAR_RADIUS_KM) / (distanceAU * ASTRO_CONSTANTS.AU_TO_KM);
+    return teff * Math.sqrt(ratio / 2.0) * Math.pow(Math.max(0, 1 - albedo), 0.25);
   }
 
   _surfaceTemperature(tEq, tau) {
@@ -115,14 +122,41 @@ export class ReducedClimateSolver {
   }
 
   _assessSurfaceWater(temperatureK, pressureBar) {
-    // Phase equilibrium: water liquid between 273.15 and 373.15 K at 1 atm
-    // Boiling point depends on pressure: Tb ≈ 100 + 27.8 * ln(P/1) for P in atm
-    const boilingPoint = 373.15 + 27.8 * Math.log(Math.max(0.006, pressureBar));
-    const freezingPoint = 273.15; // simplified (pressure effect on freezing is small)
+    // Water phase state with Clausius-Clapeyron boiling curve
+    const CRITICAL_PRESSURE_BAR = 220.64;
+    const TRIPLE_POINT_PRESSURE_BAR = 0.0061173;
+    const TRIPLE_POINT_TEMP_K = 273.16;
+    const CRITICAL_TEMP_K = 647.096;
+    const freezingPoint = 273.15;
 
-    const liquidPossible = temperatureK > freezingPoint && temperatureK < boilingPoint;
+    let boilingPoint;
+    if (pressureBar >= CRITICAL_PRESSURE_BAR) {
+      // Above critical pressure — no boiling point; supercritical
+      boilingPoint = CRITICAL_TEMP_K;
+    } else if (pressureBar < TRIPLE_POINT_PRESSURE_BAR) {
+      // Below triple point — no liquid phase exists
+      boilingPoint = 0;
+    } else {
+      // Clausius-Clapeyron: ln(P/P_ref) = (L_vap/R)(1/T_ref - 1/T_boil)
+      const P_REF = 101325;   // Pa
+      const T_REF = 373.15;   // K
+      const L_VAP = 2.257e6;  // J/kg
+      const R_H2O = 461.5;    // J/(kg·K)
+      const pressurePa = pressureBar * 1e5;
+      const lnRatio = Math.log(pressurePa / P_REF);
+      boilingPoint = 1.0 / (1.0 / T_REF - lnRatio * R_H2O / L_VAP);
+    }
+
+    const liquidPossible = pressureBar >= TRIPLE_POINT_PRESSURE_BAR &&
+                           temperatureK > freezingPoint &&
+                           temperatureK < boilingPoint &&
+                           pressureBar < CRITICAL_PRESSURE_BAR;
+
     const status = liquidPossible ? 'thermodynamically_possible' :
-                   temperatureK <= freezingPoint ? 'frozen' : 'boiled';
+                   temperatureK <= freezingPoint ? 'frozen' :
+                   pressureBar < TRIPLE_POINT_PRESSURE_BAR ? 'below_triple_point' :
+                   pressureBar >= CRITICAL_PRESSURE_BAR ? 'supercritical' :
+                   'boiled';
 
     return {
       status,
@@ -133,7 +167,7 @@ export class ReducedClimateSolver {
       freezing_point_k: freezingPoint,
       note: liquidPossible ?
         'Liquid water is thermodynamically possible at this T/P. Actual availability depends on water inventory, geology, and atmospheric composition.' :
-        `Liquid water is not stable: ${status === 'frozen' ? 'below freezing' : 'above boiling'} at ${pressureBar.toFixed(2)} bar.`
+        `Liquid water is not stable: ${status}.`
     };
   }
 
