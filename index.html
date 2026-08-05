@@ -1,0 +1,877 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='7' fill='%2300e5ff'/%3E%3Cellipse cx='16' cy='16' rx='14' ry='5' fill='none' stroke='%23e0e0fa' stroke-width='1.5' transform='rotate(-20 16 16)'/%3E%3C/svg%3E" />
+  <meta name="theme-color" content="#050508" />
+  <meta name="description" content="AETHER: An interactive educational planetary climate and habitability explorer. Explore how stellar and planetary parameters influence climate using simplified astrophysical models." />
+  <link rel="canonical" href="https://aetherplanetary.netlify.app/" />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="AETHER: Interactive Planetary Climate & Habitability Explorer" />
+  <meta property="og:description" content="Model stellar and planetary parameters and see climate, habitable zones, and habitability heuristics — entirely in your browser." />
+  <meta property="og:url" content="https://aetherplanetary.netlify.app/" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <script type="application/ld+json">
+  {"@context":"https://schema.org","@type":"WebApplication","name":"AETHER","applicationCategory":"EducationalApplication","operatingSystem":"Any (browser)","description":"Interactive planetary climate and habitability explorer using simplified 1D grey-atmosphere physics.","url":"https://aetherplanetary.netlify.app/","offers":{"@type":"Offer","price":"0"}}
+  </script>
+  <title>AETHER: Interactive Planetary Climate &amp; Habitability Explorer</title>
+  <link rel="stylesheet" href="css/app.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+</head>
+<body>
+  <a class="skip-link" href="#control-panel-anchor">Skip to controls</a>
+
+  <!-- =========================== 3D VIEWPORT =========================== -->
+  <div id="webgl-viewport" aria-hidden="true"></div>
+  <div id="starfield" aria-hidden="true"></div>
+
+  <!-- =========================== APP BAR =========================== -->
+  <header class="app-bar" role="banner">
+    <div class="app-bar__left">
+      <svg width="20" height="20" viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="7" fill="var(--cyan)"/><ellipse cx="16" cy="16" rx="14" ry="5" fill="none" stroke="var(--titan)" stroke-width="1.5" transform="rotate(-20 16 16)"/></svg>
+      <h1 class="wordmark">A&nbsp;E&nbsp;T&nbsp;H&nbsp;E&nbsp;R</h1>
+      <span class="status-pill status-pill--ok" title="On-device core engine">
+        <span class="dot"></span>
+        ON-DEVICE CORE ENGINE
+      </span>
+    </div>
+
+    <nav class="mode-pills" aria-label="Experience level selection">
+      <button class="mode-pill mode-pill--active" data-mode="beginner" type="button">
+        <span class="mode-pill__swatch" style="background:var(--cyan)"></span>
+        Beginner
+      </button>
+      <button class="mode-pill" data-mode="advanced" type="button">
+        <span class="mode-pill__swatch" style="background:var(--rust)"></span>
+        Advanced
+      </button>
+      <button class="mode-pill" data-mode="expert" type="button">
+        <span class="mode-pill__swatch" style="background:var(--gold)"></span>
+        Expert
+      </button>
+    </nav>
+
+    <div class="app-bar__right">
+      <span class="fps-pill" id="fps-pill" title="WebGL render status">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 12h4M12 10v4M16 12h2"/></svg>
+        <span>FPS:<b id="fps-readout">—</b></span>
+      </span>
+
+      <button class="utility-btn" id="btn-telemetry" type="button" aria-pressed="false" title="Toggle telemetry density">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 14l4-4 4 4 5-5"/></svg>
+        <span class="utility-btn__label">Telemetry</span>
+      </button>
+
+      <button class="utility-btn" id="btn-catalog" type="button" aria-label="Open astro catalog">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      </button>
+
+      <button class="utility-btn" id="btn-reset" type="button" aria-label="Reset to Earth defaults" title="Reset all parameters to Earth defaults">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+      </button>
+
+      <button class="utility-btn" id="btn-whitepaper" type="button" aria-label="Open equations reference">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h12a3 3 0 0 1 3 3v13H7a3 3 0 0 1-3-3z"/><path d="M4 17a3 3 0 0 1 3-3h12"/><path d="M8 8h6M8 12h4"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- =========================== DISCLAIMER BANNER =========================== -->
+  <div class="disclaimer-banner" id="disclaimer-banner">
+    <span><b>Interactive Educational Model</b>: AETHER uses simplified 1D grey-atmosphere physics for exploration, not prediction. Habitability assessments are illustrative, not authoritative.</span>
+    <button class="disclaimer-banner__close" id="disclaimer-close" type="button" aria-label="Dismiss disclaimer">✕</button>
+  </div>
+
+  <!-- =========================== ONBOARDING OVERLAY =========================== -->
+  <div class="onboarding-overlay" id="onboarding-overlay">
+    <div class="onboarding-panel">
+      <h2>Welcome to AETHER</h2>
+      <p>An interactive planetary climate explorer. Choose how to begin:</p>
+
+      <div class="onboarding-step">
+        <h3>1. Pick a Star</h3>
+        <div class="preset-row onboarding-presets">
+          <button class="chip" data-ob-star="M" type="button">M-Dwarf (M)</button>
+          <button class="chip" data-ob-star="K" type="button">K-Dwarf (K)</button>
+          <button class="chip chip--active" data-ob-star="G" type="button">Sun-like (G)</button>
+        </div>
+      </div>
+
+      <div class="onboarding-step">
+        <h3>2. Pick a Planet</h3>
+        <div class="preset-row onboarding-presets">
+          <button class="chip chip--active" data-ob-planet="earth" type="button">Earth</button>
+          <button class="chip" data-ob-planet="mars" type="button">Mars</button>
+          <button class="chip" data-ob-planet="venus" type="button">Venus</button>
+          <button class="chip" data-ob-planet="custom" type="button">Custom</button>
+        </div>
+      </div>
+
+      <p class="onboarding-note"><b>What does "habitable" mean here?</b> AETHER estimates whether liquid water <i>could</i> exist on a planet's surface based on temperature. It does not model atmosphere composition, magnetic fields, UV radiation, or biological factors.</p>
+
+      <button class="btn btn--primary onboarding-go" id="btn-start-exploring" type="button">Start Exploring</button>
+    </div>
+  </div>
+
+  <!-- =========================== WEBGL FALLBACK =========================== -->
+  <div class="fallback-notice" id="fallback-notice" style="display:none;">
+    <p><b>3D Renderer Unavailable</b>: Your browser cannot run the WebGL planet visualization. You can still explore all calculations in the control panel. <button class="btn btn--ghost" id="fallback-dismiss" type="button">OK</button></p>
+  </div>
+
+  <!-- =========================== CALIBRATION NOTICE =========================== -->
+  <div class="calibration-notice" id="calibration-notice" style="display:none;" aria-live="polite">
+    <span><b>Outside calibrated range</b>: This configuration exceeds the model's tested boundaries. Results are extrapolated and may be unreliable.</span>
+    <button class="disclaimer-banner__close" id="calibration-dismiss" type="button" aria-label="Dismiss notice">✕</button>
+  </div>
+
+  <!-- =========================== SPLIT PANE WORKSPACE =========================== -->
+  <main class="workspace">
+
+    <!-- LEFT: VISUAL ENGINE -->
+    <section class="visual-engine" aria-label="Planetary visualizer">
+      <!-- Reticle -->
+      <div class="reticle" id="reticle" title="Inspect planet">
+        <svg width="88" height="88" viewBox="0 0 88 88" fill="none">
+          <circle cx="44" cy="44" r="42" stroke="currentColor" stroke-opacity="0.5" stroke-width="1" stroke-dasharray="2 4"/>
+          <circle cx="44" cy="44" r="22" stroke="currentColor" stroke-opacity="0.7" stroke-width="1"/>
+          <circle cx="44" cy="44" r="2.5" fill="currentColor"/>
+          <path d="M44 2v10M44 76v10M2 44h10M76 44h10" stroke="currentColor" stroke-width="1"/>
+        </svg>
+        <div class="reticle-tooltip" id="reticle-tooltip">
+          <div class="rt-row"><span>Surface gravity</span><b id="rt-g">1.00 G</b></div>
+          <div class="rt-row"><span>Solar flux</span><b id="rt-s">1.00 S<sub>⊕</sub></b></div>
+          <div class="rt-row"><span>Surface T</span><b id="rt-t">288 K</b></div>
+        </div>
+      </div>
+
+      <!-- Waveform oscilloscope -->
+      <div class="oscope" aria-label="Audio waveform">
+        <canvas id="oscope-canvas" width="280" height="72"></canvas>
+        <span class="oscope__label">SONIFICATION • <i id="oscope-freq">A0</i></span>
+      </div>
+
+      <!-- Ambient HUD text (top-left inside canvas) -->
+      <div class="hud-hint">
+        <div class="hud-hint__row"><span class="hud-key">MODE</span><span class="hud-val" id="hud-mode">ASTROBIOLOGY</span></div>
+        <div class="hud-hint__row"><span class="hud-key">TARGET</span><span class="hud-val" id="hud-target">EARTH SYSTEM</span></div>
+        <div class="hud-hint__row"><span class="hud-key">STATUS</span><span class="hud-val hud-val--cyan" id="hud-status" aria-live="polite">STABLE LIQUID OCEANS</span></div>
+      </div>
+    </section>
+
+    <!-- RIGHT: CONTROL PANEL -->
+    <aside class="control-panel" id="control-panel-anchor" aria-label="Simulation controls">
+      <!-- Mode selector: Beginner / Advanced / Expert -->
+      <nav class="mode-tabs" role="tablist" aria-label="Experience level">
+        <button class="mode-tab mode-tab--active" data-mode="beginner" type="button" role="tab">Beginner</button>
+        <button class="mode-tab" data-mode="advanced" type="button" role="tab">Advanced</button>
+        <button class="mode-tab" data-mode="expert" type="button" role="tab">Expert</button>
+      </nav>
+
+      <nav class="tab-bar" role="tablist">
+        <button class="tab tab--active" data-tab="stellar" role="tab" aria-selected="true" type="button">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+          Stellar
+        </button>
+        <button class="tab" data-tab="planetary" role="tab" aria-selected="false" type="button">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12c3-3 6 3 9 0s6-3 9 0"/></svg>
+          Planetary
+        </button>
+        <button class="tab adv-only-tab" data-tab="atmosphere" role="tab" aria-selected="false" type="button">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 3v18M3 12h18M5.6 5.6l12.8 12.8"/></svg>
+          Atmosphere
+        </button>
+        <button class="tab" data-tab="metrics" role="tab" aria-selected="false" type="button">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15l3-3 3 3 5-6"/></svg>
+          Metrics
+        </button>
+        <button class="tab" data-tab="devices" role="tab" aria-selected="false" type="button">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2" width="12" height="20" rx="2"/><path d="M11 18h2"/></svg>
+          Devices
+        </button>
+        <button class="tab expert-only" data-tab="expert" role="tab" type="button">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M8 8l4 4-4 4M16 8h-4"/></svg>
+          Expert
+        </button>
+      </nav>
+
+      <div class="tab-body">
+        <!-- ===== TAB: STELLAR ===== -->
+        <section class="tab-panel tab-panel--active" data-panel="stellar" role="tabpanel" aria-labelledby="tab-stellar">
+          <h2 class="sr-only">Stellar controls</h2>
+          <div class="card">
+            <div class="card__head">
+              <h3>System Stellar Presets</h3>
+              <span class="card__sub">Main-sequence classification</span>
+            </div>
+            <div class="preset-row">
+              <button class="chip" data-stellar-preset="M" type="button">M-Dwarf</button>
+              <button class="chip" data-stellar-preset="K" type="button">K-Dwarf</button>
+              <button class="chip chip--active" data-stellar-preset="G" type="button">G-Yellow</button>
+              <button class="chip" data-stellar-preset="F" type="button">F-White</button>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card__head">
+              <h3>Effective Stellar Temperature</h3>
+              <span class="card__sub" data-tooltip="The surface temperature of the star, measured in Kelvin. Determines the star's color and energy output. The Sun is 5780 K.">T<sub>eff</sub> · Blackbody peak</span>
+            </div>
+              <div class="slider-block">
+                <div class="slider-block__row">
+                  <input type="range" id="s-teff" min="2500" max="10000" step="50" value="5780" aria-label="Effective stellar temperature in Kelvin" />
+                  <div class="num-badge" data-for="s-teff" data-unit=" K">5780</div>
+                </div>
+              <!-- mini blackbody curve -->
+              <svg class="spectrum" id="spectrum-curve" viewBox="0 0 300 60" preserveAspectRatio="none">
+                <defs>
+                  <linearGradient id="spec-grad" x1="0" x2="1">
+                    <stop offset="0%" stop-color="#ff3b00"/>
+                    <stop offset="35%" stop-color="#ffd24a"/>
+                    <stop offset="60%" stop-color="#e0e0fa"/>
+                    <stop offset="100%" stop-color="#6aa8ff"/>
+                  </linearGradient>
+                </defs>
+                <path id="spectrum-path" d="M0,60 C60,60 90,10 150,10 C210,10 240,60 300,60 Z" fill="url(#spec-grad)" fill-opacity="0.35"/>
+                <path id="spectrum-line" d="M0,60 C60,60 90,10 150,10 C210,10 240,60 300,60" stroke="url(#spec-grad)" stroke-width="1.5" fill="none"/>
+              </svg>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card__head">
+              <h3>Stellar Radius</h3>
+              <span class="card__sub">R<sub>★</sub> · vs. Sun</span>
+            </div>
+            <div class="slider-block">
+              <div class="slider-block__row">
+                <input type="range" id="s-rstar" min="0.10" max="3.00" step="0.01" value="1.00" aria-label="Stellar radius in solar radii" />
+                <div class="num-badge" data-for="s-rstar" data-unit=" R☉">1.00</div>
+              </div>
+              <!-- star/sun comparison -->
+              <div class="star-compare">
+                <div class="star-compare__sun" title="Sun (1.00 R☉)">
+                  <span>SUN</span>
+                </div>
+                <div class="star-compare__target" id="star-target" title="Target star">
+                  <span id="star-target-label">TARGET</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card card--readout">
+        <div class="card__head">
+          <div>
+            <h3>System Lifecycle</h3>
+            <span class="card__sub casual-hint">Main-sequence lifetime estimate</span>
+          </div>
+          <span class="card__sub" id="r-lifecycle">10.0 Gyr</span>
+        </div>
+        <div class="readout-grid">
+          <div class="readout">
+            <span class="readout__label" data-tooltip="Total energy output of the star. Computed from Stefan-Boltzmann law: L = 4πR²σT⁴. Sun = 1.00 L☉.">Luminosity <span class="formula-inline">· σT⁴·4πR²</span></span>
+            <span class="readout__value" id="r-lum">1.00 <i>L<sub>☉</sub></i></span>
+          </div>
+          <div class="readout">
+            <span class="readout__label">Lifecycle <span class="formula-inline">· τ∝M/L</span></span>
+            <span class="readout__value" id="r-lifecycle-state">Active</span>
+          </div>
+          <div class="readout">
+            <span class="readout__label">Stellar Wind</span>
+            <span class="readout__value" id="r-wind"><span class="chip-status chip-status--cyan">LOW</span></span>
+          </div>
+          <div class="readout">
+            <span class="readout__label" data-tooltip="The range of orbital distances where liquid water could exist on a planet's surface, based on Kopparapu et al. (2013) flux boundaries. Conservative HZ: runaway greenhouse to maximum greenhouse.">Habitable Zone <span class="formula-inline">· Kopparapu</span></span>
+            <span class="readout__value" id="r-hz">0.82 – 1.64 AU</span>
+          </div>
+        </div>
+          </div>
+        </section>
+
+        <!-- ===== TAB: PLANETARY ===== -->
+        <section class="tab-panel" data-panel="planetary" role="tabpanel"><h2 class="sr-only">Planetary controls</h2>
+          <div class="card">
+            <div class="card__head">
+              <div>
+                <h3>Orbital Distance</h3>
+                <span class="card__sub casual-hint">How far the planet orbits from its star</span>
+              </div>
+              <span class="card__sub" data-tooltip="The average distance between the planet and its star. 1 AU = Earth-Sun distance (149.6 million km).">Semi-major axis (d)</span>
+            </div>
+            <div class="slider-block">
+              <div class="slider-block__row">
+                <input type="range" id="p-distance" min="0.05" max="5.00" step="0.01" value="1.00" aria-label="Orbital distance in AU" />
+                <div class="num-badge" data-for="p-distance" data-unit=" AU" id="badge-p-distance">1.00</div>
+              </div>
+              <div class="unit-toggle" role="group" aria-label="Distance units">
+                <button class="unit-toggle__btn unit-toggle__btn--active" data-unit="AU" type="button">AU</button>
+                <button class="unit-toggle__btn" data-unit="KM" type="button">km</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card__head">
+              <div>
+                <h3>Planetary Bulk Radius</h3>
+                <span class="card__sub casual-hint">Size of the world, edge to edge</span>
+              </div>
+              <span class="card__sub">R<sub>p</sub> · cross-section</span>
+            </div>
+            <div class="slider-block">
+              <div class="slider-block__row">
+                <input type="range" id="p-radius" min="0.10" max="3.00" step="0.01" value="1.00" aria-label="Planetary radius in Earth radii" />
+                <div class="num-badge" data-for="p-radius" data-unit=" R⊕">1.00</div>
+              </div>
+              <div class="planet-cross">
+                <div class="planet-cross__earth"><span>Earth</span></div>
+                <div class="planet-cross__target" id="planet-cross-target"><span>Target</span></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card__head">
+              <div>
+                <h3>Planetary Core Mass</h3>
+                <span class="card__sub casual-hint">How much rock, metal &amp; ice the world holds</span>
+              </div>
+              <span class="card__sub">M<sub>p</sub> · density preset</span>
+            </div>
+            <div class="slider-block">
+              <div class="slider-block__row">
+                <input type="range" id="p-mass" min="0.05" max="20.00" step="0.05" value="1.00" aria-label="Planetary mass in Earth masses" />
+                <div class="num-badge" data-for="p-mass" data-unit=" M⊕">1.00</div>
+              </div>
+              <div class="preset-row">
+                <button class="chip" data-core="iron" type="button">Iron Core</button>
+                <button class="chip chip--active" data-core="silicate" type="button">Silicate Rocky</button>
+                <button class="chip" data-core="water" type="button">Water-World</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card__head">
+              <div>
+                <h3>Bond Albedo</h3>
+                <span class="card__sub casual-hint">The fraction of starlight reflected back into space</span>
+              </div>
+              <span class="card__sub" data-tooltip="Albedo is how much starlight clouds and ice reflect away. 0 = absorbs everything (blackbody), 1 = reflects everything (perfect mirror). Earth ≈ 0.30.">A · reflectivity</span>
+            </div>
+            <div class="slider-block">
+              <div class="slider-block__row">
+                <input type="range" id="p-albedo" min="0.00" max="0.95" step="0.01" value="0.30" aria-label="Bond albedo, fraction of starlight reflected" />
+                <div class="num-badge" data-for="p-albedo" data-unit="" id="badge-p-albedo">0.30</div>
+              </div>
+              <div class="marker-track" id="albedo-markers">
+                <span style="left:12.6%"><i>0.12 Basalt</i></span>
+                <span style="left:31.5%" class="marker-track__active"><i>0.30 Earth</i></span>
+                <span style="left:78.9%"><i>0.75 Venus Clouds</i></span>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card__head">
+              <div>
+                <h3>Greenhouse Optical Depth</h3>
+                <span class="card__sub casual-hint">How strongly the atmosphere traps outgoing heat</span>
+              </div>
+              <span class="card__sub" data-tooltip="Optical depth (τ) is a dimensionless measure of how strongly the atmosphere absorbs infrared radiation. Higher τ = thicker atmosphere = more heat trapped. τ=0 is vacuum, Earth ≈ 0.85–1.5, Venus ≈ 12.">τ<sub>s</sub> · 1D grey-atmosphere</span>
+            </div>
+            <div class="slider-block">
+              <div class="slider-block__row">
+                <input type="range" id="p-tau" min="0.00" max="15.00" step="0.01" value="1.50" aria-label="Greenhouse optical depth" />
+                <div class="num-badge" data-for="p-tau" data-unit="" id="badge-p-tau">1.50</div>
+              </div>
+              <div class="climate-badge" id="climate-badge" aria-live="polite" aria-label="Climate regime output">
+                <span class="climate-badge__dot climate-badge__dot--cyan"></span>
+                <b>Liquid Stable Oceans</b>
+                <i>τ within temperate window</i>
+                <span class="climate-confidence" id="climate-confidence">Confidence: Low: atmospheric composition not modeled</span>
+              </div>
+              <div class="model-limitation">
+                <span class="model-limitation__icon">i</span>
+                <span class="model-limitation__text">Climate regime is based on surface temperature only. Atmospheric composition, pressure, water availability, UV radiation, magnetic fields, and geological activity are not modeled.</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- QHF Result (rendered by ResultRenderer) -->
+          <div class="card advanced-only" id="qhf-result-card" style="display:none;">
+            <div class="card__head">
+              <h3>Habitability Assessment</h3>
+              <span class="card__sub">QHF viability analysis</span>
+            </div>
+            <div id="qhf-result-body"></div>
+          </div>
+        </section>
+
+        <!-- ===== TAB: ATMOSPHERE ===== -->
+        <section class="tab-panel advanced-only" data-panel="atmosphere">
+          <div class="card">
+            <div class="card__head">
+              <div>
+                <h3>Atmosphere Preset</h3>
+                <span class="card__sub casual-hint">Choose a known atmosphere or configure manually</span>
+              </div>
+            </div>
+            <div class="preset-row" id="atmo-preset-row">
+              <button class="chip chip--active" data-atmo-preset="earth_n2_o2" type="button">Earth N₂/O₂</button>
+              <button class="chip" data-atmo-preset="mars_co2" type="button">Mars CO₂</button>
+              <button class="chip" data-atmo-preset="venus_co2" type="button">Venus CO₂</button>
+              <button class="chip" data-atmo-preset="titan_n2_ch4" type="button">Titan N₂/CH₄</button>
+              <button class="chip" data-atmo-preset="early_earth_co2_ch4" type="button">Early Earth</button>
+              <button class="chip" data-atmo-preset="h2_dominated" type="button">H₂-rich</button>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card__head">
+              <div>
+                <h3>Surface Pressure</h3>
+                <span class="card__sub casual-hint">Total atmospheric pressure at the surface</span>
+              </div>
+              <span class="card__sub">P<sub>surf</sub></span>
+            </div>
+            <div class="slider-block">
+              <div class="slider-block__row">
+                <input type="range" id="a-pressure" min="0.001" max="100" step="0.01" value="1.013" aria-label="Surface pressure in bar" />
+                <div class="num-badge" data-for="a-pressure" data-unit=" bar">1.013</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card__head">
+              <div>
+                <h3>Gas Composition</h3>
+                <span class="card__sub">Mole fractions (must sum to ~1.0)</span>
+              </div>
+              <span class="card__sub" id="gas-sum-badge">Σ = 1.000</span>
+            </div>
+            <div class="gas-grid" id="gas-grid">
+              <div class="gas-row"><label for="gas-N2">N₂</label><input type="range" id="gas-N2" min="0" max="1" step="0.001" value="0.7808" /><span class="gas-val" id="gas-val-N2">0.7808</span></div>
+              <div class="gas-row"><label for="gas-O2">O₂</label><input type="range" id="gas-O2" min="0" max="1" step="0.001" value="0.2095" /><span class="gas-val" id="gas-val-O2">0.2095</span></div>
+              <div class="gas-row"><label for="gas-CO2">CO₂</label><input type="range" id="gas-CO2" min="0" max="1" step="0.0001" value="0.00042" /><span class="gas-val" id="gas-val-CO2">0.000420</span></div>
+              <div class="gas-row"><label for="gas-H2O">H₂O</label><input type="range" id="gas-H2O" min="0" max="1" step="0.001" value="0" /><span class="gas-val" id="gas-val-H2O">0.0000</span></div>
+              <div class="gas-row"><label for="gas-CH4">CH₄</label><input type="range" id="gas-CH4" min="0" max="1" step="0.000001" value="0.000002" /><span class="gas-val" id="gas-val-CH4">0.000002</span></div>
+              <div class="gas-row"><label for="gas-Ar">Ar</label><input type="range" id="gas-Ar" min="0" max="1" step="0.001" value="0.0093" /><span class="gas-val" id="gas-val-Ar">0.0093</span></div>
+            </div>
+            <div class="model-limitation" id="gas-warning" style="display:none;" aria-live="polite">
+              <span class="model-limitation__icon">!</span>
+              <span class="model-limitation__text">Gas fractions do not sum to 1.0. Values will be renormalized.</span>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card__head">
+              <div>
+                <h3>Biological Target</h3>
+                <span class="card__sub casual-hint">What organism or condition to evaluate</span>
+              </div>
+            </div>
+            <div class="preset-row" id="biology-target-row">
+              <button class="chip chip--active" data-target="surface_liquid_water" type="button">Surface Water</button>
+              <button class="chip" data-target="methanogen" type="button">Methanogen</button>
+              <button class="chip" data-target="cyanobacteria" type="button">Cyanobacteria</button>
+              <button class="chip" data-target="thermophile" type="button">Thermophile</button>
+              <button class="chip" data-target="psychrophile" type="button">Psychrophile</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- ===== TAB: SCENARIO (Expert) ===== -->
+        <section class="tab-panel expert-only" data-panel="scenario">
+          <div class="card">
+            <div class="card__head">
+              <h3>Scenario JSON Editor</h3>
+              <span class="card__sub">Import / export full scenario configuration</span>
+            </div>
+            <textarea id="scenario-json" class="scenario-editor" rows="16" spellcheck="false" placeholder="Paste a scenario JSON here, or click Export to generate one from current settings."></textarea>
+            <div class="twin-actions" style="margin-top:8px;">
+              <button class="action-btn" id="btn-export-scenario" type="button">
+                <span>Export Current</span>
+              </button>
+              <button class="action-btn" id="btn-import-scenario" type="button">
+                <span>Import &amp; Apply</span>
+              </button>
+            </div>
+            <div id="scenario-status" aria-live="polite" class="sensor-note" style="margin-top:8px;"></div>
+          </div>
+
+          <div class="card">
+            <div class="card__head">
+              <h3>Model Fidelity</h3>
+              <span class="card__sub">Select solver fidelity level</span>
+            </div>
+            <div class="preset-row" id="fidelity-row">
+              <button class="chip chip--active" data-fidelity="reduced" type="button">Reduced</button>
+              <button class="chip" data-fidelity="column_approximation" type="button" disabled title="Requires the Python backend, which is not connected in this deployment" style="opacity:.45;cursor:not-allowed;">Column (Experimental: backend offline)</button>
+            </div>
+            <p class="sensor-note">Reduced: instant client-side. Column: experimental 1D radiative-convective approximation (Python backend required).</p>
+          </div>
+
+          <div class="card">
+            <div class="card__head">
+              <h3>Result Provenance</h3>
+              <span class="card__sub">Full audit trail of last computation</span>
+            </div>
+            <pre id="provenance-json" class="scenario-editor" style="max-height:200px;overflow:auto;font-size:10px;">No computation yet.</pre>
+          </div>
+        </section>
+
+        <!-- ===== TAB: METRICS ===== -->
+        <section class="tab-panel" data-panel="metrics" role="tabpanel"><h2 class="sr-only">Metrics</h2>
+          <div class="card">
+            <div class="card__head">
+              <h3>Similarity Heuristic Compass</h3>
+              <span class="card__sub">Geometric mean · ESI / MSI / VSI · not a probability of life</span>
+            </div>
+            <div class="similarity-grid">
+              <div class="sim-card sim-card--cyan">
+                <div class="sim-card__label">Earth Similarity Heuristic</div>
+                <div class="sim-card__ring">
+                  <svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="42" class="ring-track"/><circle cx="50" cy="50" r="42" class="ring-fill" id="esi-ring"/></svg>
+                  <div class="sim-card__val" id="val-esi">0.000</div>
+                </div>
+                <div class="sim-card__meta">ESI</div>
+              </div>
+              <div class="sim-card sim-card--rust">
+                <div class="sim-card__label">Mars Similarity Heuristic</div>
+                <div class="sim-card__ring">
+                  <svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="42" class="ring-track"/><circle cx="50" cy="50" r="42" class="ring-fill" id="msi-ring"/></svg>
+                  <div class="sim-card__val" id="val-msi">0.000</div>
+                </div>
+                <div class="sim-card__meta">MSI</div>
+              </div>
+              <div class="sim-card sim-card--gold">
+                <div class="sim-card__label">Venus Similarity Heuristic</div>
+                <div class="sim-card__ring">
+                  <svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="42" class="ring-track"/><circle cx="50" cy="50" r="42" class="ring-fill" id="vsi-ring"/></svg>
+                  <div class="sim-card__val" id="val-vsi">0.000</div>
+                </div>
+                <div class="sim-card__meta">VSI</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card__head">
+              <h3>Kopparapu Circumstellar Habitable Zone</h3>
+              <span class="card__sub">Spatial flux boundaries · 1 M⊕</span>
+            </div>
+            <div class="hz-bar">
+              <div class="hz-bar__track">
+                <div class="hz-zone hz-zone--fire"><span>Stellar Fire</span></div>
+                <div class="hz-zone hz-zone--opt"><span>Optimistic HZ</span></div>
+                <div class="hz-zone hz-zone--cons"><span>Conservative HZ</span></div>
+                <div class="hz-zone hz-zone--ice"><span>Ice Boundary</span></div>
+        <div class="hz-marker" id="hz-marker-rv" data-label="Recent Venus"></div>
+        <div class="hz-marker hz-marker--inner" id="hz-marker-rg" data-label="Runaway Greenhouse"></div>
+        <div class="hz-marker hz-marker--outer" id="hz-marker-mg" data-label="Maximum Greenhouse"></div>
+        <div class="hz-marker" id="hz-marker-em" data-label="Early Mars"></div>
+                <div class="hz-target" id="hz-target" title="Selected orbit">
+                  <div class="hz-target__pin"></div>
+                  <div class="hz-target__label" id="hz-target-label">1.00 AU</div>
+                </div>
+              </div>
+              <div class="hz-axis">
+                <span>Inner Orbit</span>
+                <span id="hz-status" class="hz-status">Stable Liquid Water Zone</span>
+                <span>Outer Orbit</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="card card--readout">
+            <div class="card__head">
+              <h3>Integrated Mass Derivatives</h3>
+              <span class="card__sub">Derived at client tick</span>
+            </div>
+            <div class="kv-list">
+              <div class="kv"><span data-tooltip="Mass divided by volume. Earth = 5.51 g/cm³. Lower density suggests more rock/ice, higher suggests iron-rich.">Computed Bulk Density</span><b id="v-density">5.51 g/cm³</b><i>1.00 ρ<sub>⊕</sub></i></div>
+              <div class="kv"><span data-tooltip="Minimum speed needed to escape the planet's gravity. Earth = 11.2 km/s. Too low means the atmosphere leaks into space.">Escape Velocity</span><b id="v-vesc">11.2 km/s</b><i>1.00 v<sub>⊕</sub></i></div>
+              <div class="kv"><span data-tooltip="Gravitational acceleration at the surface. Earth = 1 G (9.81 m/s²). Affects atmosphere retention and potential for life.">Surface Gravity</span><b id="v-grav">1.00 G</b><i>9.81 m/s²</i></div>
+              <div class="kv"><span data-tooltip="Temperature the planet would have with no atmosphere, based only on starlight absorbed vs reflected. Earth = 255 K (−18°C).">Eq. Temperature</span><b id="v-teq">255 K</b><i>Bond albedo bound</i></div>
+              <div class="kv"><span data-tooltip="Temperature after accounting for atmospheric greenhouse effect. Earth = 288 K (15°C). This is the model's best estimate of surface conditions.">Surface Temperature</span><b id="v-tsurf" class="kv--cyan">288 K</b><i>τ-corrected</i></div>
+            </div>
+          </div>
+
+          <div class="card card--compare sci-only">
+            <div class="card__head">
+              <h3>Solar-System Comparative Frame</h3>
+              <span class="card__sub">Telemetry reference · Earth / Mars / Venus</span>
+            </div>
+            <div class="compare-table" role="table" aria-label="Solar system comparison">
+              <div class="compare-table__head" role="row">
+                <span role="columnheader">Body</span>
+                <span role="columnheader">R<sub>p</sub></span>
+                <span role="columnheader">ρ</span>
+                <span role="columnheader">v<sub>e</sub></span>
+                <span role="columnheader">g</span>
+                <span role="columnheader">T<sub>s</sub></span>
+                <span role="columnheader">SI</span>
+              </div>
+              <div class="compare-row" id="cmp-target" role="row">
+                <span class="compare-row__name" style="color:var(--cyan)">TARGET</span>
+                <span id="cmp-t-r">1.00 R⊕</span>
+                <span id="cmp-t-rho">1.00 ρ⊕</span>
+                <span id="cmp-t-v">1.00 v⊕</span>
+                <span id="cmp-t-g">1.00 G</span>
+                <span id="cmp-t-t">288 K</span>
+                <span id="cmp-t-si" class="kv--cyan">1.000</span>
+              </div>
+              <div class="compare-row" role="row">
+                <span class="compare-row__name" style="color:#6aa8ff">Earth</span><span>1.00 R⊕</span><span>1.00 ρ⊕</span><span>1.00 v⊕</span><span>1.00 G</span><span>288 K</span><span class="kv--cyan" id="cmp-earth-si">1.000</span>
+              </div>
+              <div class="compare-row" role="row">
+                <span class="compare-row__name" style="color:var(--rust)">Mars</span><span>0.53 R⊕</span><span>0.71 ρ⊕</span><span>0.45 v⊕</span><span>0.38 G</span><span>240 K</span><span class="kv--gold" id="cmp-mars-si">0.000</span>
+              </div>
+              <div class="compare-row" role="row">
+                <span class="compare-row__name" style="color:var(--gold)">Venus</span><span>0.95 R⊕</span><span>0.95 ρ⊕</span><span>0.93 v⊕</span><span>0.91 G</span><span>737 K</span><span id="cmp-venus-si">0.000</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ===== TAB: DEVICES ===== -->
+        <section class="tab-panel" data-panel="devices" role="tabpanel"><h2 class="sr-only">Device settings</h2>
+          <div class="card">
+            <div class="card__head">
+              <h3>Optional Device Sensors</h3>
+              <span class="card__sub">Tilt controls &amp; mic test · entirely optional</span>
+            </div>
+            <div class="twin-actions">
+              <button class="action-btn" id="btn-gyro" type="button">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2"/></svg>
+                <span>Enable Gyroscope</span>
+                <i id="gyro-status">Off</i>
+              </button>
+              <button class="action-btn" id="btn-mic" type="button">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0014 0M12 18v3"/></svg>
+                <span>Mic Test</span>
+                <i id="mic-status">Idle</i>
+              </button>
+            </div>
+            <p class="sensor-note">Gyroscope: optional tilt-to-rotate camera. Mouse/touch always works without it. Mic test: checks browser audio capability only: does not record or transmit audio.</p>
+          </div>
+
+          <div class="card">
+            <div class="card__head">
+              <h3>Web Audio Acoustic Sonifier</h3>
+              <span class="card__sub">Atmospheric FM synthesis</span>
+            </div>
+            <div class="sonifier">
+              <button class="toggle-row" id="btn-audio" type="button" aria-pressed="false">
+                <span class="toggle-row__label">Master Audio Synthesizer</span>
+                <span class="toggle-switch"><span class="toggle-switch__knob"></span></span>
+                <span class="toggle-row__state" id="audio-state">INACTIVE</span>
+              </button>
+              <!-- larger oscilloscope -->
+              <canvas id="oscope-big" class="oscope-big" width="560" height="120"></canvas>
+              <div class="sonifier__meta">
+                <span>Baseline pitch: <b id="son-pitch">A2</b></span>
+                <span>LPF cutoff: <b id="son-lpf">1.4 kHz</b></span>
+                <span>τ drive: <b id="son-tau">1.50</b></span>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card__head">
+              <h3>Integrated Environmental Telemetry</h3>
+              <span class="card__sub">UX preferences</span>
+            </div>
+            <div class="toggle-list">
+              <button class="toggle-row" data-toggle="night" type="button" aria-pressed="false">
+                <span class="toggle-row__label">High-Contrast Night-Sky Mode</span>
+                <span class="toggle-switch"><span class="toggle-switch__knob"></span></span>
+                <span class="toggle-row__state">OFF</span>
+              </button>
+              <button class="toggle-row toggle-row--active" data-toggle="haptics" type="button" aria-pressed="true">
+                <span class="toggle-row__label">Haptic Surface Boundary Warnings</span>
+                <span class="toggle-switch toggle-switch--on"><span class="toggle-switch__knob"></span></span>
+                <span class="toggle-row__state">ON</span>
+              </button>
+            </div>
+          </div>
+        </section>
+      </div>
+    </aside>
+  </main>
+
+  <!-- =========================== BOTTOM PRESETS DRAWER =========================== -->
+  <section class="preset-drawer" id="preset-drawer" aria-label="System presets">
+    <button class="drawer-handle" id="drawer-handle" aria-label="Toggle preset drawer" type="button"><span></span></button>
+    <div class="drawer-head">
+      <h4>Preset Benchmarks</h4>
+      <span class="drawer-head__sub" id="drawer-sub">Solar system reference &amp; exoplanet candidates</span>
+    </div>
+    <div class="baseline-banner" id="baseline-banner">
+      <b>Baseline preset: Earth-like reference.</b> Adjust the controls to explore deviations. Values are normalized to 1 Earth mass, 1 Earth radius, 1 AU, and 288 K.
+    </div>
+    <div class="drawer-carousel" id="drawer-carousel">
+      <!-- cards injected by JS for ordering + data binding -->
+    </div>
+  </section>
+
+  <!-- =========================== SHARE CONFIGURATION =========================== -->
+  <div class="share-bar" id="share-bar">
+    <button class="utility-btn" id="btn-share" type="button" aria-label="Get shareable link" title="Get a URL that recreates this exact configuration">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+      <span class="utility-btn__label">Share</span>
+    </button>
+    <input type="text" class="share-url-input" id="share-url" readonly aria-label="Shareable configuration URL" placeholder="Click Share to generate link" />
+  </div>
+
+  <!-- =========================== OVERLAY: ASTRO CATALOG =========================== -->
+  <aside class="overlay" id="overlay-catalog" aria-hidden="true">
+    <div class="overlay__backdrop" data-close="catalog"></div>
+    <div class="overlay__panel">
+      <div class="overlay__head">
+        <h3>Real-World System Catalog</h3>
+        <button class="overlay__close" data-close="catalog" type="button" aria-label="Close">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <p class="overlay__sub">Click any system to load parameters into the simulator. Note: orbital distance, radius, and mass may be observed or estimated. Albedo and optical depth are illustrative assumptions where direct measurement is unavailable.</p>
+      <div class="catalog-list" id="catalog-list"></div>
+    </div>
+  </aside>
+
+  <!-- =========================== OVERLAY: WHITEPAPER =========================== -->
+  <aside class="overlay overlay--right" id="overlay-whitepaper" aria-hidden="true">
+    <div class="overlay__backdrop" data-close="whitepaper"></div>
+    <div class="overlay__panel">
+      <div class="overlay__head">
+        <h3>The Mathematical Core of AETHER</h3>
+        <button class="overlay__close" data-close="whitepaper" type="button" aria-label="Close">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <p class="overlay__sub">Client-side radiative transfer &amp; similarity indexing. All models below are simplified educational approximations, not validated research instruments.</p>
+      <div class="equation-list">
+        <div class="eq">
+          <div class="eq__num">01</div>
+          <div class="eq__body">
+            <h5>Equilibrium Thermal Gradient</h5>
+            <p class="formula">T<sub>eq</sub> = T<sub>eff</sub> · √( R<sub>★</sub> / 2d ) · (1 − A)<sup>¼</sup></p>
+            <p class="eq__desc">Bond albedo-bound blackbody equilibrium at orbital distance d, before optical-depth correction.</p>
+            <div class="eq__vars">
+              <div><code>T<sub>eff</sub></code>: Effective stellar temperature (K)</div>
+              <div><code>R<sub>★</sub></code>: Stellar radius (solar radii, converted to km internally)</div>
+              <div><code>d</code>: Orbital distance (AU, converted to km internally)</div>
+              <div><code>A</code>: Bond albedo (dimensionless, 0–1)</div>
+            </div>
+            <p class="eq__assumption">Assumptions: Planet is a blackbody. Star emits as a perfect blackbody. Albedo is uniform across all wavelengths. No atmospheric effects at this stage.</p>
+          </div>
+        </div>
+        <div class="eq">
+          <div class="eq__num">02</div>
+          <div class="eq__body">
+            <h5>Eddington Approximation: Surface Temperature</h5>
+            <p class="formula">T<sub>s</sub><sup>4</sup> = (¾) T<sub>eq</sub><sup>4</sup> · ( τ<sub>s</sub> + ⅔ )</p>
+            <p class="eq__desc">τ (optical depth) is a dimensionless measure of how strongly the atmosphere absorbs outgoing infrared radiation. This implementation treats the atmosphere as a grey, plane-parallel layer and does not model individual gases.</p>
+            <div class="eq__vars">
+              <div><code>T<sub>s</sub></code>: Surface temperature (K)</div>
+              <div><code>T<sub>eq</sub></code>: Equilibrium temperature from Eq. 01 (K)</div>
+              <div><code>τ<sub>s</sub></code>: Surface optical depth (dimensionless, 0–15)</div>
+            </div>
+            <p class="eq__assumption">Assumptions: Uses the Hopf function approximation q(τ) ≈ 2/3. Atmosphere is "grey" (absorbs all wavelengths equally). Does not model convection, clouds, or specific greenhouse gases. At very high τ, the model becomes unreliable.</p>
+          </div>
+        </div>
+        <div class="eq">
+          <div class="eq__num">03</div>
+          <div class="eq__body">
+            <h5>Bulk Density &amp; Escape Velocity</h5>
+            <p class="formula">ρ = M<sub>p</sub> / (4/3 π R<sub>p</sub>³) &nbsp;&nbsp; v<sub>e</sub> = √(2GM<sub>p</sub>/R<sub>p</sub>)</p>
+            <p class="eq__desc">Derived from mass-radius inputs. Core-material preset (iron/silicate/water) scales effective density relative to Earth's 5.51 g/cm³.</p>
+            <div class="eq__vars">
+              <div><code>M<sub>p</sub></code>: Planetary mass (Earth masses)</div>
+              <div><code>R<sub>p</sub></code>: Planetary radius (Earth radii)</div>
+              <div><code>G</code>: Gravitational constant (6.674×10⁻¹¹ N·m²/kg²)</div>
+              <div><code>ρ</code>: Bulk density (g/cm³)</div>
+              <div><code>v<sub>e</sub></code>: Escape velocity (km/s)</div>
+            </div>
+            <p class="eq__assumption">Assumptions: Planet is a uniform sphere. Core-material multiplier is a rough approximation of compositional effects.</p>
+          </div>
+        </div>
+        <div class="eq">
+          <div class="eq__num">04</div>
+          <div class="eq__body">
+            <h5>Geometric-Mean Similarity Heuristic</h5>
+            <p class="formula">SI = ( S<sub>R</sub> · S<sub>ρ</sub> · S<sub>v</sub> · S<sub>T</sub> )<sup>¼</sup></p>
+            <p class="eq__desc">A custom weighted geometric mean comparing a planet's radius, density, escape velocity, and temperature against reference baselines (Earth, Mars, Venus). This is an exploratory heuristic: it is <b>not</b> a probability of life, not a validated habitability metric, and the weights are model assumptions.</p>
+            <div class="eq__vars">
+              <div><code>S<sub>R</sub></code>: Radius sub-index (Bray-Curtis-like symmetric deviation)</div>
+              <div><code>S<sub>ρ</sub></code>: Density sub-index</div>
+              <div><code>S<sub>v</sub></code>: Escape velocity sub-index</div>
+              <div><code>S<sub>T</sub></code>: Temperature sub-index</div>
+            </div>
+            <p class="eq__assumption">Similarity to Earth does not imply habitability. Similarity to Mars or Venus is not a classification. Weights are hand-tuned, not empirically derived.</p>
+          </div>
+        </div>
+        <div class="eq">
+          <div class="eq__num">05</div>
+          <div class="eq__body">
+            <h5>Kopparapu Effective Stellar Flux Boundaries</h5>
+            <p class="formula">S<sub>eff</sub> = S<sub>eff☉</sub> + aT<sub>★</sub> + bT<sub>★</sub>² + cT<sub>★</sub>³ + dT<sub>★</sub>⁴</p>
+            <p class="eq__desc">4th-order polynomial boundaries defining habitable-zone edges (Recent Venus → Early Mars). T<sub>★</sub> = T<sub>eff</sub> − 5780 K. Evaluated per 1 M⊕ benchmark. The resulting S<sub>eff</sub> is converted to an orbital distance via d = √(L/S<sub>eff</sub>).</p>
+            <div class="eq__vars">
+              <div><code>S<sub>eff</sub></code>: Effective stellar flux (dimensionless, relative to Earth)</div>
+              <div><code>S<sub>eff☉</sub></code>: Solar-effective flux at boundary (from Kopparapu table)</div>
+              <div><code>a, b, c, d</code>: Polynomial coefficients (from Kopparapu et al. 2013)</div>
+              <div><code>L</code>: Stellar luminosity (solar luminosities)</div>
+            </div>
+            <p class="eq__assumption">Validated for 1 M⊕ planets. The 4th-order polynomial becomes unreliable far outside the 2500–7000 K stellar temperature range.</p>
+          </div>
+        </div>
+      </div>
+      <div class="cite">
+        <b>Data & Privacy:</b> AETHER runs entirely in your browser. No accounts, no analytics, no cookies — no data leaves your device. Report issues: <a href="https://github.com/nakshjhaai-lgtm/AETHER-Atmospheric-Equilibrium-Thermal-Habitability-Evaluation-Engine-/issues" target="_blank" rel="noopener" style="color:var(--cyan)">GitHub Issues</a>.
+        <b style="margin-top:10px;display:block;">References</b>
+        <p>Kopparapu, R. K., et al. (2013). "Habitable zones around main-sequence stars: new estimates." <i>The Astrophysical Journal</i>, 765(2), 131. <a href="https://doi.org/10.1088/0004-637X/765/2/131" target="_blank" rel="noopener" style="color:var(--cyan)">doi:10.1088/0004-637X/765/2/131</a></p>
+        <p>Schulze-Makuch, D., et al. (2011). "A two-tiered approach to assessing the habitability of exoplanets." <i>Astrobiology</i>, 11(10), 1041–1052. <a href="https://doi.org/10.1089/ast.2010.0592" target="_blank" rel="noopener" style="color:var(--cyan)">doi:10.1089/ast.2010.0592</a></p>
+        <p>Kaltenegger, L. &amp; Sasselov, D. (2010). "Detecting planetary transits in the near-infrared." <i>The Astrophysical Journal</i>, 708(2), 1162.</p>
+      </div>
+      <div class="model-limitation eq-limitation">
+        <span class="model-limitation__icon">!</span>
+        <span class="model-limitation__text"><b>Model Limitations:</b> AETHER uses a 1D grey-atmosphere with fixed albedo input. It does not model: individual atmospheric gases, convection, cloud feedback, magnetic fields, tidal locking, rotation, seasonal variation, geological cycling, water availability, UV radiation, or stellar flares. Results are educational approximations, not predictive science.</span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- =========================== PERMISSION DIALOG =========================== -->
+  <div class="dialog" id="dialog-sensor" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="dialog-title">
+    <div class="dialog__panel">
+      <div class="dialog__icon">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/></svg>
+      </div>
+      <h3 id="dialog-title">Optional: Device Orientation</h3>
+      <p>Allow AETHER to read your device's tilt sensors to rotate the 3D camera. This is entirely optional: mouse and touch controls work fine without it. iOS requires a secure (HTTPS) connection.</p>
+      <p class="dialog__status" id="dialog-status">Status: <b style="color:var(--cosmic)">PROMPT</b></p>
+      <div class="dialog__actions">
+        <button class="btn btn--ghost" id="dialog-dismiss" type="button">Not Now</button>
+        <button class="btn btn--primary" id="dialog-authorize" type="button">Enable Gyroscope</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Three.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script type="module" src="js/app.js"></script>
+  <noscript>
+    <div style="position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:#050508;color:#e0e0fa;font-family:'IBM Plex Sans',sans-serif;padding:40px;text-align:center;">
+      <div>
+        <p style="font-size:22px;font-weight:600;margin-bottom:16px;">AETHER requires JavaScript</p>
+        <p style="color:#8c8ca3;">Please enable JavaScript in your browser to use this interactive planetary climate explorer. AETHER runs entirely in your browser: no server required.</p>
+      </div>
+    </div>
+  </noscript>
+</body>
+</html>

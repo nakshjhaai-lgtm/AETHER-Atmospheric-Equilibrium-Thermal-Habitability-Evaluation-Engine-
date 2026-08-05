@@ -1,91 +1,252 @@
- AETHER (Atmospheric Equilibrium & Thermal Habitability Evaluation Engine)
+# AETHER 3.0.0-alpha.1
 
+**Interactive Planetary Climate, Atmosphere, and Quantitative Habitability Explorer**
 
-Try It Here:- https://aetherplanetary.netlify.app/ 
+**[Live Demo](https://aetherplanetary.netlify.app/)** — hosted on Netlify for demonstration. Source code is on GitHub.
 
+> **Status: Alpha.** AETHER v3 is under active scientific development. The reduced climate engine is functional. The QHF (Quantitative Habitability Framework) and uncertainty modules are implemented but not yet fully validated against established models. The Python backend and high-fidelity path are experimental.
 
-## 1. The Big Picture (Project Overview)
-AETHER is a web-based, interactive planetary physics simulator that lets users build and evaluate the habitability of alien worlds in real time. Think of it as a highly responsive, digital planetarium that fits in your pocket.
-**What problem this solves and for whom:**
-Historically, exoplanet simulators were either heavily academic tools locked behind complex command-line interfaces or overly simplified web toys that just guessed at planetary temperatures. AETHER bridges this gap. It gives space enthusiasts, educators, and researchers a highly precise, data-rich analysis dashboard that runs smoothly on a mobile phone without dumbing down the actual astrophysics.
-**The User Journey:**
-If AETHER were a high-end soundboard in a recording studio, the user is the producer sliding the dials. You start by selecting a base star, like a yellow sun or a red dwarf. Then, using sliders, you push the planet closer to the star, change its mass, or thicken its atmosphere. The moment you move a slider, the planet visually transforms on screen, the surrounding data readouts instantly recalculate, and an ambient audio track shifts in pitch to reflect the new temperature.
-## 2. Technical Architecture — The Blueprint
-If most modern web apps are like sprawling restaurant chains—relying on a central corporate office (the backend server) to approve menu changes and send supplies—AETHER is a fully stocked, self-sufficient food truck. It carries all its own ingredients and does all the cooking right in front of the customer.
-**The Architecture Diagram:**
-```text
-[ User Inputs (Sliders/Touches) ] 
-       │
-       ▼
-[ Orchestrator (app.js) ] ──▶ [ Math Engine (mathEngine.js) ] (The Brain)
-       │                              │ Calculates temp, gravity, similarity
-       │                              ▼
-       ├────────────────────▶ [ Shader Engine (shaderEngine.js) ] (The Paintbrush)
-       │                              │ Draws the planet, handles 3D space
-       │                              ▼
-       └────────────────────▶ [ Audio Engine (audioEngine.js) ] (The Voice)
-                                      │ Generates atmospheric sounds
+---
 
-```
-**Why this design?**
-AETHER is a "pure-client" application. There is no backend server, no database, and no API keys. All calculations happen directly inside the user's web browser.
- * **Why we did it:** This eliminates server hosting costs, avoids network lag, and ensures that when a user moves a slider, the planet reacts instantly (within 0.15 milliseconds).
- * **The Trade-off:** Because we don't have a massive server farm doing the heavy lifting, the code running on the user's phone has to be incredibly lightweight and ruthlessly optimized to prevent the device's battery from draining or the screen from stuttering.
-## 3. Codebase Structure — The Filing System
-Think of the codebase like a theater production. You have the stage, the director, the script, the lighting crew, and the orchestra.
-```text
-aether-mvp/
-├── index.html          (The Stage)
-├── css/
-│   └── app.css         (The Set Design & Costumes)
-└── js/
-    ├── app.js          (The Director)
-    ├── mathEngine.js   (The Script / Laws of Physics)
-    ├── shaderEngine.js (The Lighting & Visual Effects)
-    └── audioEngine.js  (The Orchestra)
+## What AETHER Is
+
+AETHER is a browser-based platform for exploring how stellar and planetary parameters influence climate and habitability. It implements:
+
+- **Reduced climate engine**: 1D grey-atmosphere radiative equilibrium with Eddington approximation
+- **QHF (Quantitative Habitability Framework)**: Modular habitat model + organism viability model, following the NExSS QHF paradigm
+- **8 biological targets**: Surface liquid water, methanogen, cyanobacteria, thermophile, psychrophile, halophile, acidophile, radiation-tolerant
+- **14 tracked atmospheric gases**: N₂, O₂, CO₂, H₂O, CH₄, H₂, He, Ar, O₃, N₂O, SO₂, CO, NH₃, H₂S
+- **Uncertainty propagation**: Latin Hypercube and Monte Carlo sampling with sensitivity analysis
+- **3 user modes**: Beginner, Advanced, Expert
+
+## What AETHER Is Not
+
+- A general circulation model (GCM)
+- A validated weather/climate prediction tool
+- A detector of life
+- A probability-of-life calculator
+- An official NASA product
+- Peer-reviewed scientific software
+
+---
+
+## Architecture
 
 ```
- * **index.html**: The skeleton of the app. It sets up the layout, the buttons, and the invisible canvas where the 3D graphics will be drawn.
- * **css/app.css**: Controls how everything looks. It manages the "glassmorphism" style (semi-transparent panels), the colors, and how the layout shifts when you move from a wide desktop screen to a narrow mobile phone.
- * **js/app.js**: The central orchestrator. It listens for your button clicks and slider movements, then yells at the other files to do their jobs. You open this file when you want to change how the app responds to user actions.
- * **js/mathEngine.js**: The physics brain. It holds the complex formulas that figure out how hot a planet gets based on its atmosphere and star.
- * **js/shaderEngine.js**: The visual workhorse. It takes the numbers from the math engine and uses them to paint the 3D planet on your screen, coloring the oceans and drawing the clouds.
- * **js/audioEngine.js**: The sound generator. It creates live audio frequencies based on the planet's temperature and atmospheric thickness.
-## 4. Connections & Data Flow — How Things Talk to Each Other
-Let's trace a specific action to see how the system communicates.
-**Action: The user thickens the planet's atmosphere (increasing "Optical Depth").**
- 1. **The Trigger:** The user drags the atmosphere slider to the right. The slider rings a bell inside app.js to announce a change.
- 2. **The Calculation:** app.js immediately hands the new slider number to mathEngine.js. The math engine calculates the new, much hotter surface temperature (because a thicker atmosphere traps more heat).
- 3. **The Visuals:** app.js then hands that new hot temperature to shaderEngine.js. The shader engine checks its rules, sees the planet is now boiling, and repaints the blue oceans into a glowing orange runaway greenhouse state.
- 4. **The Sound:** Finally, app.js tells audioEngine.js about the thick atmosphere. The audio engine applies a "low-pass filter," making the ambient sound muffled and deep, like listening underwater.
-**What could go wrong here?**
-To use the device's gyroscope (to look around the 3D space by tilting your phone) or to play audio, Apple and Google require a deliberate user action, like a button click. If the app tries to start the audio engine automatically when the page loads, the phone's security system will silently block it, and the app will break or remain mute.
-## 5. Technology Choices — The Toolbox
-| Technology | What It Does Here | Why This One | Watch Out For |
-|---|---|---|---|
-| **Vanilla JavaScript** | Runs the entire application's logic without heavy frameworks. | We skipped big frameworks like React or Vue to keep the file size tiny (under 36 KB) and ensure the physics math runs instantly without overhead. | It requires writing more manual code to connect the sliders to the visual updates. |
-| **Three.js** | Draws the 3D planet and stars in the background. | It is the industry standard for 3D web graphics, doing the heavy lifting of talking to the device's graphics card. | Rendering 3D graphics on a phone can easily drain the battery if not optimized. |
-| **Web Audio API** | Synthesizes the ambient space sounds live. | We generate sounds with math rather than downloading heavy MP3 audio files, saving massive amounts of bandwidth. | Browsers strictly block audio from playing until the user explicitly clicks a "play" button. |
-| **Device Orientation API** | Tracks how the user tilts their mobile phone. | Allows users to look around the planet by simply moving their device, creating a native app feel. | iPhones strictly require the site to be hosted on a secure connection (HTTPS) to allow this. |
-## 6. Environment & Configuration
-Because AETHER is a pure-client application, setting it up is incredibly simple.
- * **Environments:** There is no difference between a "development" environment and "production". What you run on your laptop is exactly what goes to the live server.
- * **Variables and Secrets:** There are absolutely zero .env files, API keys, database passwords, or secret tokens.
- * **Hosting:** You can drop this folder into any basic static file host (like GitHub Pages, Netlify, or Vercel) and it will work immediately.
-**What could go wrong:** If you ever decide to add a database later (for example, letting users save their favorite planets), you will suddenly need to introduce servers, authentication, and secure environment variables, fundamentally changing how the app is hosted and deployed.
-## 7. Lessons Learned — The War Stories
-**Bugs & Fixes: The "Glass" that Broke the Graphics Card**
-Early on, the app featured 17 stacked "blur filters" to create beautiful, frosted-glass menus overlapping the 3D background.
- * *The Cause:* Reading the 3D canvas and blurring it in real-time is computationally exhausting for a phone.
- * *The Fix:* We had to completely rip out the backdrop-filter CSS properties. The lesson here is that visual polish can easily destroy performance if you aren't testing on older mobile devices.
-**Pitfalls & Landmines: The Anti-Aliasing Trap**
-Anti-aliasing is a graphics trick that smooths out jagged edges on 3D shapes. Usually, you want this on.
- * *The Problem:* We found that leaving anti-aliasing on was the single biggest cause of frame-rate drops on mobile devices.
- * *The Fix:* We explicitly turned it off (antialias: false) and capped the screen resolution. The procedural planet still looks great, and the app now runs flawlessly at 60 frames per second. If anyone tries to turn anti-aliasing back on in shaderEngine.js to make it look slightly smoother, mobile performance will instantly tank.
-**Engineering Wisdom: Trust the GPU**
-Normally, to draw a realistic planet, you would download a massive image file of a rocky surface and wrap it around a 3D sphere.
-Instead, we built custom "shaders" (code that runs directly on the graphics card) to mathematically generate mountains, oceans, and clouds from scratch using noise algorithms. This means we don't have to force the user to download large images, keeping the app lightning-fast and under 240 Kilobytes.
-## 8. Quick Reference Card
- * **How to run locally:** Open your computer's terminal, navigate to the aether-mvp folder, and type python3 -m http.server 8080. Then open your web browser and go to http://localhost:8080.
- * **Security rule:** If you are testing the gyroscope feature on an iPhone, you *must* serve the site over HTTPS, or Apple will block the sensors.
- * **Where things start:** If you need to trace a bug, always start in js/app.js. It acts as the grand central station for all data moving through the app.
+Browser UI (index.html)
+├── Beginner mode — presets, plain-language results
+├── Advanced mode — gas composition, multi-parameter controls
+├── Expert mode — scenario JSON, solver config, uncertainty, exports
+│
+├── js/schema/ — Constants, gas properties, validation
+├── js/models/ — Star, orbit, planet, atmosphere, surface, radiation models
+├── js/solvers/
+│   ├── reduced-climate.js — 1D grey atmosphere (fast, <100ms)
+│   ├── qhf.js — QHF habitat + viability framework
+│   └── uncertainty.js — Latin Hypercube / Monte Carlo
+├── js/workers/climate-worker.js — Web Worker for off-main-thread solving
+├── js/visualization/gcm-adapter.js — GCM scenario file exporter (NOT a GCM runner)
+└── js/ui/ — Mode controller, result renderer
+
+Python backend (python/api/main.py)
+├── FastAPI REST API
+├── 1D column approximation (EXPERIMENTAL, not validated)
+├── Job queue for async computation
+└── QHF and uncertainty propagation
+```
+
+---
+
+## Quick Start
+
+### Frontend (Browser)
+
+```bash
+git clone https://github.com/nakshjhaai-lgtm/AETHER-Atmospheric-Equilibrium-Thermal-Habitability-Evaluation-Engine-.git
+cd AETHER-Atmospheric-Equilibrium-Thermal-Habitability-Evaluation-Engine-
+python3 -m http.server 8080
+# Open http://localhost:8080
+```
+
+### Tests
+
+```bash
+npm install
+npm test
+```
+
+### Python Backend (Optional, Experimental)
+
+```bash
+pip install fastapi uvicorn numpy scipy pydantic
+uvicorn python.api.main:app --reload --port 8000
+```
+
+---
+
+## Repository Structure
+
+```
+.
+├── index.html                          Main UI
+├── css/app.css                         Styles
+├── package.json                        npm config + vitest
+├── pyproject.toml                      Python project config
+├── vitest.config.js                    Test config
+│
+├── schemas/
+│   └── scenario-schema.json            Canonical scenario JSON Schema
+│
+├── js/
+│   ├── app.js                          Orchestrator
+│   ├── audio-engine.js                 Web Audio sonification
+│   ├── shader-engine.js                Three.js WebGL renderer
+│   ├── math-engine.js                  Backward-compatibility bridge
+│   ├── schema/
+│   │   ├── constants.js                All scientific constants, gas properties, presets, organism models
+│   │   └── validate-scenario.js        Scenario validator
+│   ├── models/
+│   │   ├── star-model.js               Star properties, luminosity, HZ
+│   │   ├── orbit-model.js              Orbital mechanics
+│   │   ├── planet-model.js             Gravity, density, escape velocity
+│   │   ├── atmosphere-model.js         Gas composition, opacity, presets
+│   │   ├── surface-model.js            Albedo, emissivity
+│   │   ├── radiation-model.js          UV, cosmic ray estimation
+│   │   └── model-adapter.js            UI↔solver interface
+│   ├── solvers/
+│   │   ├── reduced-climate.js          Fast 1D grey atmosphere
+│   │   ├── qhf.js                      QHF habitat + viability
+│   │   └── uncertainty.js              Sampling and sensitivity
+│   ├── ui/
+│   │   ├── mode-controller.js          Beginner/Advanced/Expert
+│   │   └── result-renderer.js          Mode-appropriate results
+│   ├── visualization/
+│   │   └── gcm-adapter.js              GCM scenario file exporter
+│   └── workers/
+│       └── climate-worker.js           Web Worker
+│
+├── python/
+│   └── api/
+│       └── main.py                     FastAPI backend (experimental)
+│
+├── data/
+│   ├── organisms/methanogen.json       Methanogen tolerance data
+│   └── benchmarks/earth-reference.json Earth validation benchmark
+│
+├── tests/
+│   ├── unit/                           Unit tests
+│   ├── benchmark/                      Solar System benchmarks
+│   └── scientific/                     Conservation law tests
+│
+└── docs/
+    └── model-specification/
+        └── scientific-contract.md      Frozen scientific specification
+```
+
+---
+
+## Scientific Model Details
+
+### Reduced Climate Engine
+
+**Model fidelity:** `reduced`
+**Latency:** < 100ms on mobile
+**Equations:**
+
+1. **Equilibrium temperature** (Stefan-Boltzmann):
+   `T_eq = T_eff × √(R★/d) × (1−A)^¼`
+
+2. **Surface temperature** (Eddington grey atmosphere):
+   `T_s⁴ = ¾ × T_eq⁴ × (τ + ⅔)`
+
+3. **Water phase** (Clausius-Clapeyron):
+   Boiling point from `ln(P/P₀) = (L/R)(1/T₀ − 1/T)` with critical point check.
+
+**Limitations:** Fixed albedo, no convection, no clouds, no gas-specific opacity, no atmospheric dynamics.
+
+### QHF (Quantitative Habitability Framework)
+
+**Reference:** Apai et al. (2025), NExSS Quantitative Habitability Framework
+
+**Framework:** Habitat model H(x) × Viability model V(x) → Suitability Q = ∫ V(x)·H(x) dx
+
+- Habitat variables: temperature, pressure, water activity, pH, salinity, UV, radiation
+- Viability functions: Gaussian tolerance curves with documented ranges
+- Output: suitability (0–1), limiting factors, confidence note
+
+**Current status:** Deterministic and Monte Carlo modes implemented. Variable correlations not yet modeled. Organism tolerance ranges from published literature but not all empirically validated.
+
+### Uncertainty Engine
+
+**Methods:** Latin Hypercube Sampling, Monte Carlo, Sobol-like sensitivity indices
+**Output:** Median, mean, std, 95% credible interval, sensitivity ranking
+
+---
+
+## Current Limitations
+
+| Feature | Status |
+|---|---|
+| Reduced 1D grey atmosphere | ✅ Internally benchmarked against Earth/Mars/Venus reference scenarios. Not externally validated against established climate codes. |
+| QHF surface liquid water | ✅ Working |
+| QHF methanogen viability | ✅ Working (tolerance-based, not energy-model validated) |
+| QHF other organisms | ✅ Working (tolerance ranges from literature) |
+| Uncertainty propagation | ⚠️ Implemented (JS solver + Python API); not yet exposed in the UI |
+| Web Worker | ⚠️ Functional but needs module bundler for production |
+| 1D column approximation (Python) | ⚠️ Experimental, not validated against established models |
+| Photochemistry | ❌ Not implemented (requires established backend) |
+| 3D GCM execution | ❌ Not implemented (exporter only) |
+| Gas-specific opacity tables | ⚠️ Basic implementation with pressure broadening and Rayleigh scattering |
+| Radiative transfer | ⚠️ Wavelength-resolved bands with gas absorption (educational grade) |
+| Convective adjustment | ⚠️ Dry and moist adiabatic lapse rates with condensation |
+| Cloud/aerosol models | ⚠️ Basic cloud formation from condensation |
+| Atmospheric escape dynamics | ❌ Not implemented |
+
+---
+
+## Scientific References
+
+- Kopparapu, R. K., et al. (2013). "Habitable zones around main-sequence stars: new estimates." *The Astrophysical Journal*, 765(2), 131. [doi:10.1088/0004-637X/765/2/131](https://doi.org/10.1088/0004-637X/765/2/131)
+- Apai, D., et al. (2025). "NExSS Quantitative Habitability Framework." [arxiv.org/abs/2505.22808](https://arxiv.org/html/2505.22808)
+- Méndez, A., et al. (2021). "Habitability Models for Astrobiology." *Astrobiology*, 21(8). [doi:10.1089/ast.2020.2342](https://doi.org/10.1089/ast.2020.2342)
+- Pierrehumbert, R. (2010). *Principles of Planetary Climate.* Cambridge University Press.
+- Rothschild, L. J. & Mancinelli, R. L. (2001). "Life in extreme environments." *Nature*, 409, 1092. [doi:10.1038/35059215](https://doi.org/10.1038/35059215)
+- Takai, K., et al. (2008). "Cell proliferation at 122°C and isotopically heavy CH₄ production." *PNAS*, 105(31). [doi:10.1073/pnas.0712797105](https://doi.org/10.1073/pnas.0712797105)
+
+---
+
+## License
+
+See repository for license details.
+
+---
+
+## Model Registry
+
+All scientific models are tracked in `data/model-registry.json` with:
+- Model ID and version
+- Fidelity level
+- Validation status (what was tested, what was not)
+- Known limitations
+- Citations
+
+## Confidence Categories
+
+Every scientific value in AETHER is classified as:
+
+| Category | Meaning |
+|---|---|
+| **Observed** | Directly measured by instrument |
+| **Inferred** | Derived from observations with model assumptions |
+| **Estimated** | Computed from other parameters using a model |
+| **Assumed** | Set to a default without specific evidence |
+| **Illustrative** | Chosen for educational purposes |
+| **Unknown** | Cannot be determined from available data |
+
+## Changelog
+
+See [CHANGELOG.md](CHANGELOG.md) for all scientific and architectural changes.
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup and scientific change guidelines.
