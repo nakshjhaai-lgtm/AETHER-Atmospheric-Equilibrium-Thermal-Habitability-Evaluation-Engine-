@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <rect width="1200" height="630" fill="#08080d"/>
+  <!-- Planet -->
+  <circle cx="600" cy="315" r="120" fill="#0c0c14" stroke="#1c1c2a" stroke-width="2"/>
+  <circle cx="600" cy="315" r="118" fill="none" stroke="#00e5ff" stroke-width="1" opacity="0.3"/>
+  <!-- Atmosphere glow -->
+  <circle cx="600" cy="315" r="135" fill="none" stroke="#00e5ff" stroke-width="0.5" opacity="0.15"/>
+  <!-- Orbit ring -->
+  <ellipse cx="600" cy="315" rx="180" ry="60" fill="none" stroke="#e0e0fa" stroke-width="1" opacity="0.15" transform="rotate(-20 600 315)"/>
+  <!-- Title -->
+  <text x="600" y="510" text-anchor="middle" font-family="monospace" font-size="28" font-weight="700" fill="#e0e0fa" letter-spacing="8">AETHER</text>
+  <!-- Subtitle -->
+  <text x="600" y="545" text-anchor="middle" font-family="sans-serif" font-size="14" fill="#8c8ca3" letter-spacing="1">Interactive Planetary Climate &amp; Habitability Explorer</text>
+  <!-- Status dots -->
+  <circle cx="560" cy="570" r="3" fill="#00e5ff"/>
+  <circle cx="600" cy="570" r="3" fill="#ff6600"/>
+  <circle cx="640" cy="570" r="3" fill="#ffe600"/>
+</svg>
