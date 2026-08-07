@@ -1,4 +1,4 @@
-// audioEngine.js — Lightweight Web Audio sonification for AETHER
+// audioEngine.js: Lightweight Web Audio sonification for AETHER
 // ---------------------------------------------------------------------------
 // Single oscillator + LFO + lowpass keeps CPU usage low on mobile.
 

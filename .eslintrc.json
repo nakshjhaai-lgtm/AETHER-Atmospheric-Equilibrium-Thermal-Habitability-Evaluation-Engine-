@@ -1,0 +1,25 @@
+{
+  "env": {
+    "browser": true,
+    "es2022": true,
+    "node": true
+  },
+  "parserOptions": {
+    "ecmaVersion": 2022,
+    "sourceType": "module"
+  },
+  "rules": {
+    "no-unused-vars": ["warn", { "argsIgnorePattern": "^_" }],
+    "no-undef": "off",
+    "no-console": "off",
+    "eqeqeq": ["error", "smart"],
+    "no-eval": "error",
+    "no-implied-eval": "error",
+    "no-new-func": "error",
+    "no-var": "error",
+    "prefer-const": "warn",
+    "no-constant-condition": "warn",
+    "no-prototype-builtins": "warn"
+  },
+  "ignorePatterns": ["node_modules/", "python/", "dist/"]
+}

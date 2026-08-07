@@ -1,0 +1,35 @@
+{
+  "name": "aether",
+  "version": "3.0.0-alpha.1",
+  "description": "Interactive Planetary Climate, Atmosphere, and Quantitative Habitability Explorer",
+  "type": "module",
+  "main": "js/app.js",
+  "scripts": {
+    "test": "node --experimental-vm-modules node_modules/.bin/vitest run",
+    "test:e2e": "npx playwright test",
+    "test:watch": "node --experimental-vm-modules node_modules/.bin/vitest",
+    "test:unit": "node --experimental-vm-modules node_modules/.bin/vitest run tests/unit/",
+    "test:benchmark": "node --experimental-vm-modules node_modules/.bin/vitest run tests/benchmark/",
+    "test:scientific": "node --experimental-vm-modules node_modules/.bin/vitest run tests/scientific/",
+    "serve": "python3 -m http.server 8080",
+    "validate": "node tools/verify-consistency.js",
+    "lint": "eslint js/ --ext .js --max-warnings 0",
+    "lint:css": "stylelint css/app.css --allow-empty-input"
+  },
+  "keywords": [
+    "exoplanet",
+    "habitability",
+    "climate",
+    "astrobiology",
+    "atmosphere"
+  ],
+  "author": "Naksh Jha",
+  "license": "MIT",
+  "devDependencies": {
+    "@playwright/test": "^1.48.0",
+    "eslint": "^8.57.0",
+    "stylelint": "^17.14.1",
+    "stylelint-config-standard": "^40.0.0",
+    "vitest": "^1.6.0"
+  }
+}

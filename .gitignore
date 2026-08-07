@@ -1,0 +1,14 @@
+node_modules/
+__pycache__/
+*.pyc
+.env
+.DS_Store
+dist/
+build/
+*.egg-info/
+.pytest_cache/
+.vite/
+test-results/
+.venv/
+aether_jobs.db
+.env
