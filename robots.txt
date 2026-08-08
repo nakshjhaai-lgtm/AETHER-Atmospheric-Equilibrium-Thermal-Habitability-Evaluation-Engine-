@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://aetherplanetary.netlify.app/sitemap.xml
+Sitemap: https://aether-climate-explorer.netlify.app/sitemap.xml
