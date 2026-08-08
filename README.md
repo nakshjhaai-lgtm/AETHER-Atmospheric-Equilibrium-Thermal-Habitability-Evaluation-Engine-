@@ -2,7 +2,7 @@
 
 **Interactive Planetary Climate, Atmosphere, and Quantitative Habitability Explorer**
 
-**[Live Demo](https://aetherplanetary.netlify.app/)**: hosted on Netlify for demonstration. Source code is on GitHub.
+**[Live Demo](https://aether-climate-explorer.netlify.app/)**: hosted on Netlify for demonstration. Source code is on GitHub.
 
 > **Status: Alpha.** AETHER v3 is under active scientific development. The reduced climate engine is functional. The QHF (Quantitative Habitability Framework) and uncertainty modules are implemented but not yet fully validated against established models. The Python backend and high-fidelity path are experimental.
 
