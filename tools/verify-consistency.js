@@ -92,6 +92,7 @@ const testFiles = [
   'tests/unit/test-schema-validation.test.js',
   'tests/unit/test-atmosphere-integration.test.js',
   'tests/unit/test-model-registry.test.js',
+  'tests/unit/test-shader-engine.test.js',
   'tests/benchmark/test-solar-system.test.js',
   'tests/scientific/test-conservation.test.js'
 ];

@@ -177,11 +177,13 @@ void main(){
 `;
 
 function detectQuality() {
-  const isMobile = /Android|iPhone|iPad|iPod|Mobile|Silk|Opera Mini/i.test(navigator.userAgent)
-    || (navigator.maxTouchPoints && navigator.maxTouchPoints > 1 && window.innerWidth < 1024);
-  const lowMem = (navigator.deviceMemory && navigator.deviceMemory <= 2);
-  const smallViewport = window.innerWidth * window.innerHeight < 900000; // < ~1000x900
-  const dpr = Math.min(window.devicePixelRatio || 1, (isMobile || smallViewport) ? 1.0 : 1.5);
+  const win = typeof window !== 'undefined' ? window : { innerWidth: 1280, innerHeight: 720, devicePixelRatio: 1 };
+  const nav = typeof navigator !== 'undefined' ? navigator : { userAgent: '', maxTouchPoints: 0, deviceMemory: 8 };
+  const isMobile = /Android|iPhone|iPad|iPod|Mobile|Silk|Opera Mini/i.test(nav.userAgent)
+    || (nav.maxTouchPoints && nav.maxTouchPoints > 1 && win.innerWidth < 1024);
+  const lowMem = (nav.deviceMemory && nav.deviceMemory <= 2);
+  const smallViewport = win.innerWidth * win.innerHeight < 900000; // < ~1000x900
+  const dpr = Math.min(win.devicePixelRatio || 1, (isMobile || smallViewport) ? 1.0 : 1.5);
   const segments = (isMobile || smallViewport) ? 40 : (lowMem ? 56 : 64);
   const starCount = (isMobile || smallViewport) ? 500 : 900;
   const detail = (isMobile || smallViewport) ? 0.0 : 1.0;
@@ -190,8 +192,9 @@ function detectQuality() {
 }
 
 export class ShaderEngine {
-  constructor(container) {
+  constructor(container, interactionSurface = null) {
     this.container = container;
+    this.interactionSurface = interactionSurface;
     this.quality = detectQuality();
     this.scene = null;
     this.camera = null;
@@ -327,7 +330,7 @@ export class ShaderEngine {
   }
 
   bindOrbitControls() {
-    const dom = this.renderer.domElement;
+    const dom = this.interactionSurface || this.renderer.domElement;
 
     const onDown = (e) => {
       this._dragging = true;
@@ -356,10 +359,11 @@ export class ShaderEngine {
     };
 
     // PointerEvents unify mouse + touch + pen across all devices
+    const win = typeof window !== 'undefined' ? window : { addEventListener() {} };
     dom.addEventListener('pointerdown', onDown);
-    window.addEventListener('pointermove', onMove);
-    window.addEventListener('pointerup', onUp);
-    window.addEventListener('pointercancel', onUp);
+    win.addEventListener('pointermove', onMove);
+    win.addEventListener('pointerup', onUp);
+    win.addEventListener('pointercancel', onUp);
     dom.addEventListener('wheel', onWheel, { passive: false });
   }
 

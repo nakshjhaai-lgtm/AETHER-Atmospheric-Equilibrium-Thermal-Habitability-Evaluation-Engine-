@@ -161,7 +161,7 @@ function initShader() {
     if (!probe.getContext('webgl') && !probe.getContext('experimental-webgl')) {
       throw new Error('WebGL not supported by this browser');
     }
-    shader = new ShaderEngine(refs.webgl);
+    shader = new ShaderEngine(refs.webgl, refs.visualEngine);
     shader.setupScene();
   } catch (err) {
     console.warn('AETHER: 3D renderer unavailable — running in panel-only mode.', err);
@@ -213,6 +213,7 @@ const safeStorage = {
 
 function cacheRefs() {
   refs.webgl = document.getElementById('webgl-viewport');
+  refs.visualEngine = $('.visual-engine');
   refs.fps   = document.getElementById('fps-readout');
   refs.hudMode = $('#hud-mode');
   refs.hudTarget = $('#hud-target');
@@ -666,37 +667,61 @@ function bindVisibility() {
 }
 function bindMobileDock() {
   const isMobile = () => window.innerWidth < 1024;
-  // Tap WebGL closes the dock
-  refs.webgl.addEventListener('pointerdown', e => {
-    if (!isMobile()) return;
-    const onUp = ev => {
-      refs.webgl.removeEventListener('pointerup', onUp);
-      refs.webgl.removeEventListener('pointercancel', onUp);
-      if (Math.hypot(ev.clientX-e.clientX, ev.clientY-e.clientY) < 6 && state.ui.mobileDockOpen) {
-        state.ui.mobileDockOpen = false; refs.controlPanel.classList.remove('is-docked');
+  // Tap visual engine / WebGL closes the dock
+  const visualSurface = refs.visualEngine || refs.webgl;
+  if (visualSurface) {
+    visualSurface.addEventListener('pointerdown', e => {
+      if (!isMobile()) return;
+      const onUp = ev => {
+        visualSurface.removeEventListener('pointerup', onUp);
+        visualSurface.removeEventListener('pointercancel', onUp);
+        if (Math.hypot(ev.clientX - e.clientX, ev.clientY - e.clientY) < 6 && state.ui.mobileDockOpen) {
+          state.ui.mobileDockOpen = false;
+          refs.controlPanel.classList.remove('is-docked');
+        }
+      };
+      visualSurface.addEventListener('pointerup', onUp);
+      visualSurface.addEventListener('pointercancel', onUp);
+    });
+  }
+  // Swipe or tap mode-tabs / tab-bar to open/close dock
+  const dragSurfaces = $$('.mode-tabs, .tab-bar');
+  dragSurfaces.forEach(surface => {
+    let startY = 0, started = false;
+    surface.style.touchAction = 'none';
+    surface.style.cursor = 'grab';
+    surface.addEventListener('pointerdown', e => {
+      if (!isMobile()) return;
+      startY = e.clientY;
+      started = true;
+    });
+    surface.addEventListener('pointermove', e => {
+      if (!started || !isMobile()) return;
+      const dy = startY - e.clientY;
+      if (dy > 30) {
+        state.ui.mobileDockOpen = true;
+        refs.controlPanel.classList.add('is-docked');
+      } else if (dy < -30) {
+        state.ui.mobileDockOpen = false;
+        refs.controlPanel.classList.remove('is-docked');
+      }
+    });
+    const onUp = (e) => {
+      if (!started || !isMobile()) {
+        started = false;
+        return;
+      }
+      const dy = startY - e.clientY;
+      started = false;
+      // Tap anywhere on the strip opens the dock if it wasn't a drag-down
+      if (dy >= -30 && !state.ui.mobileDockOpen) {
+        state.ui.mobileDockOpen = true;
+        refs.controlPanel.classList.add('is-docked');
       }
     };
-    refs.webgl.addEventListener('pointerup', onUp); refs.webgl.addEventListener('pointercancel', onUp);
+    surface.addEventListener('pointerup', onUp);
+    surface.addEventListener('pointercancel', () => { started = false; });
   });
-  // Swipe tab-bar vertically to open/close dock
-  const tabBar = $('.tab-bar');
-  if (tabBar) {
-    let startY=0, started=false;
-    tabBar.style.touchAction='none'; tabBar.style.cursor='grab';
-    tabBar.addEventListener('pointerdown', e => {
-      if (!isMobile()) return;
-      startY = e.clientY; started = true;
-      e.currentTarget.setPointerCapture(e.pointerId);
-    });
-    tabBar.addEventListener('pointermove', e => {
-      if (!started) return;
-      const dy = startY - e.clientY;
-      if (dy > 30) { state.ui.mobileDockOpen=true; refs.controlPanel.classList.add('is-docked'); }
-      else if (dy < -30) { state.ui.mobileDockOpen=false; refs.controlPanel.classList.remove('is-docked'); }
-    });
-    tabBar.addEventListener('pointerup', ()=>started=false);
-    tabBar.addEventListener('pointercancel', ()=>started=false);
-  }
 }
 function onResize() { if (shader) shader.resize(); }
 
