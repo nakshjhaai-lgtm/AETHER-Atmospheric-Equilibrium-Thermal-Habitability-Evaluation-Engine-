@@ -84,7 +84,11 @@ export function applyAtmospherePreset(key, state, refs) {
   });
 
   const pressureSlider = document.getElementById('a-pressure');
-  if (pressureSlider) pressureSlider.value = state.planet.surfacePressureBar;
+  if (pressureSlider) {
+    pressureSlider.value = state.planet.surfacePressureBar;
+    const min = parseFloat(pressureSlider.min), max = parseFloat(pressureSlider.max), val = parseFloat(pressureSlider.value);
+    pressureSlider.style.setProperty('--fill', ((val - min) / (max - min)) * 100 + '%');
+  }
 
   updateGasSum(state);
   state._dirty.ui = true;

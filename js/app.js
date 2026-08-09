@@ -257,7 +257,8 @@ function cacheRefs() {
     'p-radius':document.getElementById('p-radius'),
     'p-mass':document.getElementById('p-mass'),
     'p-albedo':document.getElementById('p-albedo'),
-    'p-tau':document.getElementById('p-tau')
+    'p-tau':document.getElementById('p-tau'),
+    'a-pressure':document.getElementById('a-pressure')
   };
   refs.badges = {}; $$('.num-badge').forEach(b => refs.badges[b.dataset.for] = b);
   refs.chipsStellar = $$('[data-stellar-preset]');
@@ -444,6 +445,7 @@ function syncSliderToState(id, val) {
     case 'p-mass':  state.planet.mass=val; break;
     case 'p-albedo':state.planet.albedo=val; break;
     case 'p-tau':   state.planet.tau=val; break;
+    case 'a-pressure':state.planet.surfacePressureBar=val; break;
   }
 }
 

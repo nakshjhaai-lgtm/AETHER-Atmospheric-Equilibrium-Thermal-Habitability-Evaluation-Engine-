@@ -126,6 +126,22 @@ describe('Atmosphere controls affect solver output', () => {
     expect(adapter.atmosphere.gasMixingRatios.CO2).toBeCloseTo(0.05, 1);
   });
 
+  it('surface pressure state updates correctly in adapter from legacy state', () => {
+    const adapter = new ModelAdapter();
+    const state = {
+      star: { teff: 5780, rstar: 1.0, preset: 'G' },
+      planet: {
+        distance: 1.0, radius: 1.0, mass: 1.0,
+        albedo: 0.30, tau: 1.50, core: 'silicate',
+        surfacePressureBar: 75.0,
+        atmoPreset: 'venus_co2'
+      }
+    };
+    adapter.buildFromLegacyState(state);
+    expect(adapter.atmosphere.totalPressureBar).toBeCloseTo(75.0, 1);
+    expect(adapter.atmosphere.totalPressurePa).toBeCloseTo(75.0 * 1e5, 1);
+  });
+
   it('atmosphere presets have valid greenhouse_optical_depth', () => {
     for (const [key, preset] of Object.entries(ATMOSPHERE_PRESETS)) {
       expect(preset.greenhouse_optical_depth).toBeDefined();
