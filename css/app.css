@@ -1426,8 +1426,7 @@ body[data-mode="beginner"] .advanced-only { display: none !important; }
   .disclaimer-banner { font-size: 10px; padding: 6px 12px; }
   .onboarding-panel { padding: 20px 16px; }
   .onboarding-panel h2 { font-size: 17px; }
-  .share-bar { left: 8px; right: 8px; bottom: calc(var(--safe-bottom) + 8px); }
-  .share-url-input { font-size: 9px; }
+  .share-bar { display: none; }
   .calibration-notice { font-size: 10px; left: 12px; right: 12px; transform: none; }
   .baseline-banner { font-size: 9.5px; }
   [data-tooltip]:hover::after { display: none; /* no hover tooltips on touch */ }

@@ -8,6 +8,7 @@ export function bindModeSelector(modeController, state) {
   const tabs = $$('.mode-tab');
   modeController.setMode('beginner');
   document.body.dataset.mode = 'beginner';
+  state.mode = 'beginner';
 
   tabs.forEach(tab => {
     tab.addEventListener('click', () => {
@@ -16,6 +17,7 @@ export function bindModeSelector(modeController, state) {
       const mode = tab.dataset.mode;
       modeController.setMode(mode);
       document.body.dataset.mode = mode;
+      state.mode = mode;
       state._dirty.ui = true;
     });
   });

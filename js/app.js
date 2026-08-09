@@ -86,7 +86,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
   buildPresetCarousel();
   buildCatalogList();
-  bindTabs(); bindModePills(); bindSliders(); bindNumBadges();
+  bindTabs(); bindTelemetryToggle(); bindSliders(); bindNumBadges();
   bindToggles(); bindChips(); bindOverlays(); bindDialog();
   bindDrawer(); bindUnitToggle(); bindReticle();
   bindVisibility(); bindMobileDock();
@@ -183,7 +183,7 @@ function cacheRefs() {
   refs.badges = {}; $$('.num-badge').forEach(b => refs.badges[b.dataset.for] = b);
   refs.chipsStellar = $$('[data-stellar-preset]');
   refs.chipsCore = $$('[data-core]');
-  refs.chipsMode = $$('.mode-pill');
+  // Mode selector handled by bindModeSelector in integration.js
   refs.drawer = $('#preset-drawer'); refs.drawerHandle = $('#drawer-handle');
   refs.drawerCarousel = $('#drawer-carousel');
   refs.controlPanel = $('.control-panel');
@@ -280,15 +280,7 @@ function bindTabs() {
   }
 }
 
-function bindModePills() {
-  refs.chipsMode.forEach(pill => pill.addEventListener('click', () => {
-    refs.chipsMode.forEach(p => p.classList.remove('mode-pill--active'));
-    pill.classList.add('mode-pill--active');
-    state.mode = pill.dataset.mode;
-    document.body.dataset.mode = state.mode;
-    applyModeAccent();
-    state._dirty.ui = true;
-  }));
+function bindTelemetryToggle() {
   refs.btnTelemetry.addEventListener('click', () => {
     state.telemetry = !state.telemetry;
     refs.btnTelemetry.setAttribute('aria-pressed', String(state.telemetry));
@@ -299,12 +291,13 @@ function bindModePills() {
   });
 }
 
-// Swaps the global accent between cyan (astrobiology) and rust (geophysics).
+// Swaps the global accent between cyan (beginner) and rust (advanced/expert).
 // Uses CSS custom properties so every slider thumb, ring, waveform and reticle
 // inherits the change without per-component JS.
 function applyModeAccent() {
   const root = document.documentElement;
-  if (state.mode === 'geophysics') {
+  // Advanced/Expert modes use rust accent for differentiation
+  if (state.mode === 'advanced' || state.mode === 'expert') {
     root.style.setProperty('--cyan', '#ff6600');
     root.style.setProperty('--cyan-soft', 'rgba(255,102,0,0.18)');
   } else {
@@ -1104,7 +1097,7 @@ function updateSpectrum() {
 }
 
 function drawScopes() {
-  const color = state.mode==='geophysics'?'#ff6600':'#00e5ff';
+  const color = (state.mode==='advanced'||state.mode==='expert')?'#ff6600':'#00e5ff';
   const bigVis = refs.oscopeBig.offsetParent !== null;
   const smallVis = refs.oscopeSmall.offsetParent !== null;
   if (audio.running) {
