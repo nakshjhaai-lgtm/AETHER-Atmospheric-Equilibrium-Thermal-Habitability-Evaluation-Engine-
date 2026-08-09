@@ -123,6 +123,7 @@ export function bindScenarioEditor(adapter, state, currentFidelityRef, currentTa
 
   if (btnExport) {
     btnExport.addEventListener('click', () => {
+      adapter.buildFromLegacyState(state);
       const scenario = adapter.toScenario();
       if (scenario) {
         scenario.biology_target = { target_type: currentTargetRef.value };

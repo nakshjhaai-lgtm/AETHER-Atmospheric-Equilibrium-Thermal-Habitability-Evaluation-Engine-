@@ -537,11 +537,28 @@ function bindToggles() {
   refs.btnMic.addEventListener('click', async () => {
     try {
       refs.micStatus.textContent = 'REQUEST';
-      if (!navigator.mediaDevices?.getUserMedia) { refs.micStatus.textContent='UNSUPPORTED'; return; }
-      const stream = await navigator.mediaDevices.getUserMedia({audio:true});
-      refs.micStatus.textContent = 'LIVE'; refs.btnMic.classList.add('is-active');
-      setTimeout(()=>{ stream.getTracks().forEach(t=>t.stop()); refs.micStatus.textContent='PASS'; refs.btnMic.classList.remove('is-active'); }, 3000);
-    } catch(_) { refs.micStatus.textContent = 'DENIED'; }
+      if (!navigator.mediaDevices?.getUserMedia) {
+        refs.micStatus.textContent = 'UNSUPPORTED';
+        return;
+      }
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      refs.micStatus.textContent = 'LIVE';
+      refs.btnMic.classList.add('is-active');
+      setTimeout(() => {
+        stream.getTracks().forEach(t => t.stop());
+        refs.micStatus.textContent = 'PASS';
+        refs.btnMic.classList.remove('is-active');
+      }, 3000);
+    } catch (err) {
+      const name = err?.name || '';
+      if (name === 'NotFoundError' || name === 'DevicesNotFoundError') {
+        refs.micStatus.textContent = 'NO MIC';
+      } else if (name === 'NotAllowedError' || name === 'PermissionDeniedError') {
+        refs.micStatus.textContent = 'DENIED (POLICY)';
+      } else {
+        refs.micStatus.textContent = 'DENIED';
+      }
+    }
   });
 }
 
