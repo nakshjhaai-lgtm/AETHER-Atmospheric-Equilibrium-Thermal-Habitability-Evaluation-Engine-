@@ -3,6 +3,10 @@
 
 import { ScenarioValidator } from '../schema/validate-scenario.js';
 
+// Local DOM helpers. `$$`/`$` defined in app.js are module-scoped there and
+// are NOT visible here — without these, every bind*() in this file threw
+// `ReferenceError: $$ is not defined` during boot.
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 
 export function bindModeSelector(modeController, state) {
   const tabs = $$('.mode-tab');

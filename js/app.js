@@ -79,10 +79,22 @@ let currentBiologyTarget = 'surface_liquid_water';
 let currentFidelity = 'reduced';
 
 window.addEventListener('DOMContentLoaded', () => {
+  try {
+    bootApp();
+  } catch (err) {
+    // Last-resort safety net: the app must never boot silently into a dead UI.
+    // If anything unexpected throws during startup, surface the panel-only
+    // fallback notice instead of leaving a blank viewport with permanently
+    // unbound controls.
+    console.error('AETHER: unexpected boot failure:', err);
+    showFallbackNotice();
+  }
+});
+
+function bootApp() {
   cacheRefs();
-  shader = new ShaderEngine(refs.webgl);
-  shader.setupScene();
-  audio = new AudioEngine();
+  initShader();
+  initAudio();
 
   buildPresetCarousel();
   buildCatalogList();
@@ -115,12 +127,12 @@ window.addEventListener('DOMContentLoaded', () => {
 
   let last = performance.now();
   function tick(now) {
-    rafId = requestAnimationFrame(tick);
+    requestAnimationFrame(tick);
     if (!running) return;
     const dt = Math.min(0.05, (now - last) / 1000);
     last = now;
     updatePhysics();
-    shader.render(dt, now * 0.001);
+    if (shader) shader.render(dt, now * 0.001);
     if (audio.running && now - state._dirty.lastPhysics > 66) {
       audio.synthesize(state.planet.tSurf, state.planet.tau);
       state._dirty.lastPhysics = now;
@@ -131,7 +143,73 @@ window.addEventListener('DOMContentLoaded', () => {
     }
   }
   requestAnimationFrame(tick);
-});
+}
+
+// ---------- Defensive boot helpers ----------
+// Boot order matters: the 3D engine and audio engine are initialized BEFORE
+// every bind*() call. A failure there used to abort the whole handler, leaving
+// every button on the page permanently dead with no notice. Each subsystem now
+// degrades independently to a no-op, and #fallback-notice explains the 3D loss.
+
+function initShader() {
+  try {
+    if (typeof THREE === 'undefined') throw new Error('THREE library not loaded');
+    // Feature-detect WebGL BEFORE constructing the renderer so restricted
+    // environments (GPU disabled, in-app browsers/WebViews, old devices) fail
+    // fast with a clear cause instead of throwing deep inside three.js.
+    const probe = document.createElement('canvas');
+    if (!probe.getContext('webgl') && !probe.getContext('experimental-webgl')) {
+      throw new Error('WebGL not supported by this browser');
+    }
+    shader = new ShaderEngine(refs.webgl);
+    shader.setupScene();
+  } catch (err) {
+    console.warn('AETHER: 3D renderer unavailable — running in panel-only mode.', err);
+    shader = null;
+    showFallbackNotice();
+  }
+}
+
+function initAudio() {
+  try {
+    audio = new AudioEngine();
+  } catch (err) {
+    console.warn('AETHER: Web Audio unavailable — sonification disabled.', err);
+    // No-op stub so every later `audio.*` call keeps working.
+    audio = {
+      running: false,
+      initialize() { return Promise.resolve(false); },
+      shutdown() {},
+      synthesize() {},
+      drawOscilloscope() {},
+      toggle() {},
+      setMasterVolume() {}
+    };
+  }
+}
+
+// Shows the WebGL fallback notice; idempotent so the dismiss button is wired
+// exactly once no matter how many callers trigger it.
+function showFallbackNotice() {
+  const fb = document.getElementById('fallback-notice');
+  if (!fb) return;
+  fb.style.display = 'flex';
+  const dismiss = document.getElementById('fallback-dismiss');
+  if (dismiss && !dismiss.dataset.aetherBound) {
+    dismiss.dataset.aetherBound = 'true';
+    dismiss.addEventListener('click', () => { fb.style.display = 'none'; });
+  }
+}
+
+// localStorage/sessionStorage can throw SecurityError in restricted WebViews
+// and private modes (some in-app browsers). Persistence must degrade to no-ops
+// so a storage failure can never kill the boot sequence.
+const safeStorage = {
+  get(k) { try { return window.localStorage.getItem(k); } catch (_) { return null; } },
+  set(k, v) { try { window.localStorage.setItem(k, v); } catch (_) {} },
+  getSession(k) { try { return window.sessionStorage.getItem(k); } catch (_) { return null; } },
+  setSession(k, v) { try { window.sessionStorage.setItem(k, v); } catch (_) {} }
+};
 
 function cacheRefs() {
   refs.webgl = document.getElementById('webgl-viewport');
@@ -479,7 +557,7 @@ function applyStellarPreset(key, silent) {
   refs.sliders['s-rstar'].value = p.rstar;
   setSliderFill(refs.sliders['s-teff']); setSliderFill(refs.sliders['s-rstar']);
   refs.chipsStellar.forEach(c => c.classList.toggle('chip--active', c.dataset.stellarPreset===key));
-  shader.setStarClass(p.teff, p.color);
+  if (shader) shader.setStarClass(p.teff, p.color);
   updateStarCompare(p);
   if (!silent) state._dirty.ui = true;
 }
@@ -560,10 +638,10 @@ function requestGyroPermission() {
 }
 function enableGyro() {
   state.devices.gyro = true; refs.btnGyro.classList.add('is-active'); refs.gyroStatus.textContent='LIVE';
-  shader.setGyro(true);
+  if (shader) shader.setGyro(true);
   window.addEventListener('deviceorientation', ev => {
     if (!state.devices.gyro) return;
-    shader.setGyroOrient((ev.beta||0)*Math.PI/180, (ev.gamma||0)*Math.PI/180);
+    if (shader) shader.setGyroOrient((ev.beta||0)*Math.PI/180, (ev.gamma||0)*Math.PI/180);
   }, {passive:true});
 }
 
@@ -620,20 +698,18 @@ function bindMobileDock() {
     tabBar.addEventListener('pointercancel', ()=>started=false);
   }
 }
-function onResize() { shader.resize(); }
+function onResize() { if (shader) shader.resize(); }
 
 // ---------- Capability Detection & Fallbacks ----------
 function detectCapabilities() {
-  // WebGL check
+  // WebGL check — reuses the idempotent fallback notice (initShader may
+  // already have shown it at boot), so the dismiss button is wired once.
   try {
     const canvas = document.createElement('canvas');
     const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
     if (!gl) throw new Error('no webgl');
   } catch (_) {
-    const fb = document.getElementById('fallback-notice');
-    if (fb) fb.style.display = 'flex';
-    const dismiss = document.getElementById('fallback-dismiss');
-    if (dismiss) dismiss.addEventListener('click', () => fb.style.display = 'none');
+    showFallbackNotice();
   }
 
   // Audio check
@@ -655,11 +731,11 @@ function bindDisclaimer() {
   const banner = document.getElementById('disclaimer-banner');
   const close = document.getElementById('disclaimer-close');
   if (!banner || !close) return;
-  const dismissed = sessionStorage.getItem('aether:disclaimer-dismissed');
+  const dismissed = safeStorage.getSession('aether:disclaimer-dismissed');
   if (dismissed) banner.style.display = 'none';
   close.addEventListener('click', () => {
     banner.style.display = 'none';
-    sessionStorage.setItem('aether:disclaimer-dismissed', 'true');
+    safeStorage.setSession('aether:disclaimer-dismissed', 'true');
   });
 }
 
@@ -667,7 +743,7 @@ function bindDisclaimer() {
 function bindOnboarding() {
   const overlay = document.getElementById('onboarding-overlay');
   if (!overlay) return;
-  const seen = localStorage.getItem('aether:onboarding-seen');
+  const seen = safeStorage.get('aether:onboarding-seen');
   if (seen) { overlay.style.display = 'none'; return; }
 
   // Star selection
@@ -702,7 +778,7 @@ function bindOnboarding() {
         }
       }
       overlay.style.display = 'none';
-      localStorage.setItem('aether:onboarding-seen', 'true');
+      safeStorage.set('aether:onboarding-seen', 'true');
       state._scenarioImported = false; // slider change overrides imported scenario
       state._dirty.ui = true;
     });
@@ -812,7 +888,7 @@ function loadStateFromURL() {
   // Hide onboarding if URL has state
   const ob = document.getElementById('onboarding-overlay');
   if (ob) ob.style.display = 'none';
-  localStorage.setItem('aether:onboarding-seen', 'true');
+  safeStorage.set('aether:onboarding-seen', 'true');
 }
 
 // ---------- Calibration Range Check ----------
@@ -891,7 +967,7 @@ function updatePhysics() {
   const qhfTarget = { target_type: currentBiologyTarget };
   state.planet.qhfResult = qhfSolver.solve(climateResult, qhfTarget);
 
-  shader.setPlanetState({
+  if (shader) shader.setPlanetState({
     surfaceTemp: state.planet.tSurf, opticalDepth: state.planet.tau, mode: state.mode,
     starColorHex: state.star.preset ? STELLAR_PRESETS[state.star.preset].color : '#fff3c2',
     terrainIntensity: Math.max(0.3, Math.min(1.3, state.planet.mass/(state.planet.radius*state.planet.radius))),
@@ -986,7 +1062,7 @@ function syncUI() {
 
   updatePlanetCross();
   updateSpectrum();
-  refs.fps.textContent = shader.fps;
+  refs.fps.textContent = shader ? shader.fps : '—';
   // Render QHF result in advanced/expert mode
   if (state.planet.qhfResult && modeController.currentMode !== "beginner") {
     renderQHFResult(state.planet.qhfResult, resultRenderer, modeController.currentMode);
@@ -1112,7 +1188,7 @@ const TUTORIAL_TIPS = [
 ];
 function showTutorialTips() {
   if (state.telemetry) return;
-  const seen = JSON.parse(localStorage.getItem('aether:tutorial-seen') || 'null');
+  const seen = JSON.parse(safeStorage.get('aether:tutorial-seen') || 'null');
   if (seen === true) return;
   TUTORIAL_TIPS.forEach((t, i) => {
     setTimeout(() => {
@@ -1123,7 +1199,7 @@ function showTutorialTips() {
       const tip = document.createElement('div');
       tip.className = 'tutorial-tip';
       tip.innerHTML = t.html + '<button type="button">Got it</button>';
-      const dismiss = () => { tip.remove(); if (i === TUTORIAL_TIPS.length - 1) localStorage.setItem('aether:tutorial-seen','true'); };
+      const dismiss = () => { tip.remove(); if (i === TUTORIAL_TIPS.length - 1) safeStorage.set('aether:tutorial-seen','true'); };
       tip.querySelector('button').addEventListener('click', dismiss);
       tip.style.left = Math.min(window.innerWidth - 240, Math.max(12, r.left)) + 'px';
       tip.style.top  = (r.bottom + 8) + 'px';
