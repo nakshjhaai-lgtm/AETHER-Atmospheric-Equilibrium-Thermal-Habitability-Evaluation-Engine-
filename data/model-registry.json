@@ -1,0 +1,69 @@
+{
+  "models": {
+    "reduced-grey-1.0.0": {
+      "name": "Reduced Grey Atmosphere",
+      "fidelity": "reduced",
+      "status": "internal-alpha",
+      "equations": [
+        "T_eq = T_eff × (R★/d)^(1/2) × (1-A)^(1/4)",
+        "T_s⁴ = (3/4) × T_eq⁴ × (τ + 2/3)"
+      ],
+      "validated_against": ["analytic-limits", "earth-reference", "mars-reference", "venus-reference"],
+      "not_validated_against": ["ROCKE-3D", "ExoCAM", "petitRADTRANS"],
+      "limitations": [
+        "Fixed albedo, no feedback",
+        "1D grey atmosphere (all wavelengths equally absorbed)",
+        "No convection, clouds, or atmospheric dynamics",
+        "No gas-specific opacity",
+        "Greenhouse optical depth is a single lumped parameter"
+      ],
+      "citations": [
+        "Pierrehumbert (2010), Principles of Planetary Climate",
+        "Kopparapu et al. (2013), ApJ 765, 131"
+      ]
+    },
+    "qhf-viability-1.0.0": {
+      "name": "QHF Organism Viability Model",
+      "fidelity": "qhf",
+      "status": "internal-alpha",
+      "validated_against": ["internal-gaussian-tolerance-tests"],
+      "not_validated_against": ["published-organism-datasets", "ecological-field-data"],
+      "limitations": [
+        "Gaussian tolerance curves, not empirically fitted",
+        "Variables assumed independent",
+        "pH and salinity are assumed priors, not derived",
+        "Methanogenesis energy model is placeholder",
+        "No correlation between habitat variables",
+        "Missing data silently ignored (should be explicit)"
+      ],
+      "citations": [
+        "Apai et al. (2025), NExSS QHF",
+        "Rothschild & Mancinelli (2001), Nature 409",
+        "Takai et al. (2008), PNAS 105(31)"
+      ]
+    },
+    "column-approximation-1.0.0": {
+      "name": "1D Column Approximation (Python)",
+      "fidelity": "column_approximation",
+      "status": "experimental",
+      "validated_against": [],
+      "not_validated_against": ["any-established-1d-code"],
+      "limitations": [
+        "Simplified optical-depth profile",
+        "No real gas opacity tables",
+        "No cloud model",
+        "No aerosol model",
+        "Fixed initial temperature guess",
+        "Not calibrated against published 1D results"
+      ]
+    }
+  },
+  "confidence_categories": {
+    "observed": "Directly measured by instrument (e.g., transit radius)",
+    "inferred": "Derived from observations with model assumptions (e.g., mass from RV)",
+    "estimated": "Computed from other parameters using a model (e.g., luminosity from T_eff and R)",
+    "assumed": "Set to a default or illustrative value without specific evidence (e.g., albedo = 0.30)",
+    "illustrative": "Chosen for educational purposes, not based on a specific planet (e.g., custom atmosphere)",
+    "unknown": "Cannot be determined from available data"
+  }
+}

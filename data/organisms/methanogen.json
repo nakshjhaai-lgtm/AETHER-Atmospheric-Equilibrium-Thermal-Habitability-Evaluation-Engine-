@@ -1,0 +1,29 @@
+{
+  "id": "methanogen_archaea",
+  "name": "Anaerobic Methanogenic Archaea",
+  "description": "Methanogens are among the simplest and most ancient known metabolisms. They produce methane from CO₂ and H₂.",
+  "source": "Takai et al. (2008), DOI:10.1073/pnas.0712797105; Merino et al. (2020)",
+  "observation_type": "laboratory_envelope",
+  "tolerance_ranges": {
+    "temperature_k": { "min": 263, "max": 400, "optimal": 340, "sigma": 30, "unit": "K" },
+    "pressure_pa": { "min": 10000, "max": 120000000, "optimal": 101325, "unit": "Pa" },
+    "water_activity": { "min": 0.60, "max": 1.0, "optimal": 0.99, "unit": "dimensionless" },
+    "ph": { "min": 4.0, "max": 10.0, "optimal": 7.0, "sigma": 2.0, "unit": "pH" },
+    "h2_partial_pa": { "min": 1, "max": 100000, "optimal": 1000, "unit": "Pa" },
+    "co2_partial_pa": { "min": 10, "max": 1000000, "optimal": 10000, "unit": "Pa" }
+  },
+  "energy_model": {
+    "type": "methanogenesis",
+    "reaction": "CO₂ + 4H₂ → CH₄ + 2H₂O",
+    "deltaG_kj_mol": -131,
+    "minimum_energy_flux_w": 1e-20,
+    "electron_donor": "H₂",
+    "electron_acceptor": "CO₂"
+  },
+  "limitations": [
+    "Tolerance ranges are laboratory envelopes, not field distributions",
+    "Energy model assumes thermodynamic availability, not kinetic barriers",
+    "Nutrient availability (N, P, S, Fe, trace metals) not modeled",
+    "Competition with other organisms not modeled"
+  ]
+}

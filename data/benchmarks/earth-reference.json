@@ -1,0 +1,25 @@
+{
+  "id": "earth_reference",
+  "name": "Earth Reference",
+  "description": "Modern Earth benchmark for model validation",
+  "source": "NASA Earth Fact Sheet, IPCC AR6",
+  "parameters": {
+    "star": { "effective_temperature_k": 5780, "mass_solar": 1.0, "radius_solar": 1.0 },
+    "orbit": { "semi_major_axis_au": 1.0, "eccentricity": 0.0167, "obliquity_deg": 23.44, "rotation_period_hours": 23.93 },
+    "planet": { "mass_earth": 1.0, "radius_earth": 1.0, "ocean_fraction": 0.71, "magnetic_field_muT": 50 },
+    "atmosphere": {
+      "total_surface_pressure_pa": 101325,
+      "gas_mixing_ratios": { "N2": 0.7808, "O2": 0.2095, "Ar": 0.0093, "CO2": 0.00042, "H2O": 0.01, "CH4": 1.8e-6, "N2O": 3.3e-7 }
+    },
+    "surface": { "albedo": 0.30 }
+  },
+  "expected_outputs": {
+    "surface_temperature_k": { "range": [285, 292], "nominal": 288 },
+    "equilibrium_temperature_k": { "range": [252, 258], "nominal": 255 },
+    "greenhouse_warming_k": { "range": [30, 38], "nominal": 33 },
+    "climate_regime": "warm_temperate",
+    "surface_water_possible": true,
+    "earth_similarity_heuristic": { "range": [0.99, 1.01], "nominal": 1.0 }
+  },
+  "tolerance": "±20 K for temperature, ±0.05 for similarity index"
+}

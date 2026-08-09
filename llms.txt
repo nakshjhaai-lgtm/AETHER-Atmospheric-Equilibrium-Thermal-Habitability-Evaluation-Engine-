@@ -1,0 +1,12 @@
+# AETHER — Interactive Planetary Climate & Habitability Explorer
+
+> AETHER is a browser-based educational engine that models 1D grey-atmosphere planetary climate, circumstellar habitable zones (Kopparapu 2013), and quantitative habitability heuristics (QHF) for 8 biological targets. It is illustrative, not predictive.
+
+## Documentation
+- [README](https://github.com/nakshjhaai-lgtm/AETHER-Atmospheric-Equilibrium-Thermal-Habitability-Evaluation-Engine-/blob/main/README.md)
+- [Scientific contract](https://github.com/nakshjhaai-lgtm/AETHER-Atmospheric-Equilibrium-Thermal-Habitability-Evaluation-Engine-/blob/main/docs/model-specification/scientific-contract.md)
+- [Reproducibility](https://github.com/nakshjhaai-lgtm/AETHER-Atmospheric-Equilibrium-Thermal-Habitability-Evaluation-Engine-/blob/main/docs/reproducibility.md)
+- [Peer review guide](https://github.com/nakshjhaai-lgtm/AETHER-Atmospheric-Equilibrium-Thermal-Habitability-Evaluation-Engine-/blob/main/docs/peer-review-guide.md)
+
+## Optional
+- [Live demo](https://aetherplanetary.netlify.app/)

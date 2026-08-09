@@ -1,4 +1,4 @@
-// shaderEngine.js — Three.js procedural WebGL planet for AETHER
+// shaderEngine.js: Three.js procedural WebGL planet for AETHER
 // ---------------------------------------------------------------------------
 // Performance-minded shader engine with quality tiers (desktop/mobile).
 
@@ -62,7 +62,7 @@ uniform float uOpticalDepth;
 uniform float uIntensity;
 uniform float uDetail;
 
-// ponytail: 2-octave fbm only. 3rd octave costs ~50% more vertex ALU for negligible detail.
+// 2-octave fbm only. 3rd octave costs ~50% more vertex ALU for negligible detail.
 float fbm2(vec3 p){
   return 0.5*snoise(p) + 0.25*snoise(p*2.03);
 }
@@ -215,6 +215,7 @@ export class ShaderEngine {
     this._gyro = { beta: 0, gamma: 0, active: false };
     this._fps = 60;
     this._frameTimes = [];
+    this.reduceMotion = typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches;
   }
 
   setupScene() {
@@ -226,7 +227,7 @@ export class ShaderEngine {
     this.updateCamera();
 
     this.renderer = new THREE.WebGLRenderer({
-      antialias: false,  // ponytail: AA is biggest per-frame cost; the planet looks fine without
+      antialias: false,  // AA is biggest per-frame cost; the planet looks fine without
       alpha: true,
       powerPreference: this.quality.powerPreference
     });
@@ -239,6 +240,17 @@ export class ShaderEngine {
     this.renderer.domElement.style.display = 'block';
     this.renderer.domElement.style.touchAction = 'none';
     this.container.appendChild(this.renderer.domElement);
+
+    // Handle WebGL context loss gracefully
+    this.renderer.domElement.addEventListener('webglcontextlost', (e) => {
+      e.preventDefault();
+      console.warn('AETHER: WebGL context lost. Planet visualization paused.');
+    });
+    this.renderer.domElement.addEventListener('webglcontextrestored', () => {
+      console.info('AETHER: WebGL context restored. Rebuilding scene.');
+      this.buildPlanet();
+      this.buildStarfield();
+    });
 
     this.starLight = new THREE.DirectionalLight(0xfff3c2, 1.6);
     this.starLight.position.set(5, 2, 4);
@@ -316,14 +328,12 @@ export class ShaderEngine {
 
   bindOrbitControls() {
     const dom = this.renderer.domElement;
-    let startX = 0, startY = 0;
 
     const onDown = (e) => {
       this._dragging = true;
       dom.setPointerCapture?.(e.pointerId ?? 1);
       const p = this._point(e);
       this._lastX = p.x; this._lastY = p.y;
-      startX = p.x; startY = p.y;
       e.preventDefault();
     };
     const onMove = (e) => {
@@ -377,7 +387,7 @@ export class ShaderEngine {
   }
 
   updateCamera() {
-    let yaw = this._yaw, pitch = this._pitch, dist = this._dist;
+    const dist = this._dist; let yaw = this._yaw, pitch = this._pitch;
 
     if (this._gyro.active) {
       const g = THREE.MathUtils.clamp(this._gyro.gamma, -1.2, 1.2);
@@ -403,7 +413,7 @@ export class ShaderEngine {
   // Cached uniforms to avoid THREE.Color allocation per frame
   _lastPlanet = { t:-1, tau:-1, terrain:-1, atmo:null, star:null };
 
-  setPlanetState({ surfaceTemp, opticalDepth, mode, starColorHex, terrainIntensity=1.0, atmoColorHex }) {
+  setPlanetState({ surfaceTemp, opticalDepth, mode: _mode, starColorHex, terrainIntensity=1.0, atmoColorHex }) {
     if (!this.material) return;
     const u = this.material.uniforms;
     u.uSurfaceTemp.value  = surfaceTemp;
@@ -446,9 +456,11 @@ export class ShaderEngine {
     }
     this.updateCamera();
 
-    this.planet.rotation.y += dt * 0.05;
-    this.atmo.rotation.y = this.planet.rotation.y;
-    if (this.starField) this.starField.rotation.y += dt * 0.005;
+    if (!this.reduceMotion) {
+      this.planet.rotation.y += dt * 0.05;
+      this.atmo.rotation.y = this.planet.rotation.y;
+      if (this.starField) this.starField.rotation.y += dt * 0.005;
+    }
 
     this.material.uniforms.uTime.value = t;
 

@@ -1,0 +1,171 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://aether.science/schemas/scenario-v1.json",
+  "title": "AETHER Scenario",
+  "description": "Complete scenario definition for AETHER planetary climate and habitability calculations",
+  "type": "object",
+  "required": ["schema_version", "model_fidelity", "star", "orbit", "planet", "atmosphere"],
+  "properties": {
+    "schema_version": { "type": "string", "const": "1.0.0" },
+    "code_version": { "type": "string" },
+    "model_fidelity": {
+      "type": "string",
+      "enum": ["reduced", "column", "photochemical", "high_fidelity", "3d_gcm"]
+    },
+    "star": { "$ref": "#/$defs/star" },
+    "orbit": { "$ref": "#/$defs/orbit" },
+    "planet": { "$ref": "#/$defs/planet" },
+    "atmosphere": { "$ref": "#/$defs/atmosphere" },
+    "surface": { "$ref": "#/$defs/surface" },
+    "radiation": { "$ref": "#/$defs/radiation" },
+    "chemistry": { "$ref": "#/$defs/chemistry" },
+    "biology_target": { "$ref": "#/$defs/biology_target" },
+    "uncertainty": { "$ref": "#/$defs/uncertainty" },
+    "solver": { "$ref": "#/$defs/solver" },
+    "provenance": { "$ref": "#/$defs/provenance" }
+  },
+  "$defs": {
+    "star": {
+      "type": "object",
+      "required": ["effective_temperature_k", "mass_solar", "radius_solar"],
+      "properties": {
+        "name": { "type": "string" },
+        "preset": { "type": "string", "enum": ["M", "K", "G", "F", "custom"] },
+        "effective_temperature_k": { "type": "number", "minimum": 2500, "maximum": 50000 },
+        "mass_solar": { "type": "number", "minimum": 0.08, "maximum": 100 },
+        "radius_solar": { "type": "number", "minimum": 0.01, "maximum": 100 },
+        "luminosity_solar": { "type": "number" },
+        "age_gyr": { "type": "number", "minimum": 0.01, "maximum": 15 },
+        "metallicity_fe_h": { "type": "number", "minimum": -3, "maximum": 1 },
+        "uv_activity_factor": { "type": "number", "minimum": 0.1, "maximum": 100, "default": 1.0 },
+        "xray_activity_factor": { "type": "number", "minimum": 0.1, "maximum": 1000, "default": 1.0 },
+        "flare_rate_multiplier": { "type": "number", "minimum": 0, "maximum": 100, "default": 1.0 }
+      }
+    },
+    "orbit": {
+      "type": "object",
+      "required": ["semi_major_axis_au"],
+      "properties": {
+        "semi_major_axis_au": { "type": "number", "minimum": 0.001, "maximum": 100 },
+        "eccentricity": { "type": "number", "minimum": 0, "maximum": 0.99, "default": 0 },
+        "inclination_deg": { "type": "number", "minimum": 0, "maximum": 180, "default": 0 },
+        "obliquity_deg": { "type": "number", "minimum": 0, "maximum": 180, "default": 23.44 },
+        "rotation_period_hours": { "type": "number", "minimum": 0.1, "maximum": 10000, "default": 24.0 },
+        "tidal_lock_state": { "type": "string", "enum": ["free", "synchronous", "spin_orbit_resonance", "unknown"], "default": "free" }
+      }
+    },
+    "planet": {
+      "type": "object",
+      "required": ["mass_earth", "radius_earth"],
+      "properties": {
+        "mass_earth": { "type": "number", "minimum": 0.01, "maximum": 20 },
+        "radius_earth": { "type": "number", "minimum": 0.1, "maximum": 3.0 },
+        "core_model": { "type": "string", "enum": ["iron", "silicate", "water", "custom"], "default": "silicate" },
+        "density_multiplier": { "type": "number", "minimum": 0.5, "maximum": 2.0, "default": 1.0 },
+        "geothermal_flux_w_m2": { "type": "number", "minimum": 0, "maximum": 10, "default": 0.09 },
+        "magnetic_field_muT": { "type": "number", "minimum": 0, "maximum": 1000, "default": 50 },
+        "ocean_fraction": { "type": "number", "minimum": 0, "maximum": 1, "default": 0.71 },
+        "land_fraction": { "type": "number", "minimum": 0, "maximum": 1, "default": 0.29 },
+        "ice_fraction": { "type": "number", "minimum": 0, "maximum": 1, "default": 0.05 },
+        "surface_thermal_inertia": { "type": "number", "minimum": 100, "maximum": 5000000, "default": 1500000 }
+      }
+    },
+    "atmosphere": {
+      "type": "object",
+      "required": ["total_surface_pressure_pa"],
+      "properties": {
+        "total_surface_pressure_pa": { "type": "number", "minimum": 0, "maximum": 10000000 },
+        "preset": { "type": "string", "enum": ["earth_n2_o2", "mars_co2", "venus_co2", "titan_n2_ch4", "custom"] },
+        "gas_mixing_ratios": {
+          "type": "object",
+          "additionalProperties": { "type": "number", "minimum": 0, "maximum": 1 }
+        },
+        "relative_humidity_surface": { "type": "number", "minimum": 0, "maximum": 1, "default": 0.6 },
+        "cloud_optical_depth": { "type": "number", "minimum": 0, "maximum": 100, "default": 0 },
+        "aerosol_optical_depth": { "type": "number", "minimum": 0, "maximum": 10, "default": 0 },
+        "greenhouse_optical_depth": { "type": "number", "minimum": 0, "maximum": 50, "description": "Legacy reduced-model parameter. Use gas_mixing_ratios for column/advanced models." }
+      }
+    },
+    "surface": {
+      "type": "object",
+      "properties": {
+        "albedo": { "type": "number", "minimum": 0, "maximum": 0.99, "default": 0.3 },
+        "emissivity": { "type": "number", "minimum": 0.5, "maximum": 1.0, "default": 0.95 },
+        "roughness_length_m": { "type": "number", "minimum": 0.0001, "maximum": 10, "default": 0.01 }
+      }
+    },
+    "radiation": {
+      "type": "object",
+      "properties": {
+        "include_rayleigh": { "type": "boolean", "default": true },
+        "include_cia": { "type": "boolean", "default": true },
+        "include_clouds": { "type": "boolean", "default": false },
+        "n_bands_shortwave": { "type": "integer", "minimum": 1, "maximum": 200, "default": 16 },
+        "n_bands_longwave": { "type": "integer", "minimum": 1, "maximum": 200, "default": 16 }
+      }
+    },
+    "chemistry": {
+      "type": "object",
+      "properties": {
+        "enabled": { "type": "boolean", "default": false },
+        "network": { "type": "string", "enum": ["none", "reduced_ch4", "reduced_o3", "full_atmospheric"], "default": "none" },
+        "surface_fluxes": { "type": "object", "additionalProperties": { "type": "number" } }
+      }
+    },
+    "biology_target": {
+      "type": "object",
+      "required": ["target_type"],
+      "properties": {
+        "target_type": {
+          "type": "string",
+          "enum": ["surface_liquid_water", "methanogen", "cyanobacteria", "thermophile", "psychrophile", "halophile", "acidophile", "radiation_tolerant", "custom"]
+        },
+        "custom_tolerance_ranges": { "type": "object" }
+      }
+    },
+    "uncertainty": {
+      "type": "object",
+      "properties": {
+        "enabled": { "type": "boolean", "default": false },
+        "n_samples": { "type": "integer", "minimum": 100, "maximum": 100000, "default": 1000 },
+        "sampling_method": { "type": "string", "enum": ["monte_carlo", "latin_hypercube", "sobol"], "default": "latin_hypercube" },
+        "seed": { "type": "integer" },
+        "distributions": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/uncertainty_variable" }
+        }
+      }
+    },
+    "uncertainty_variable": {
+      "type": "object",
+      "required": ["variable", "distribution", "parameters"],
+      "properties": {
+        "variable": { "type": "string" },
+        "distribution": { "type": "string", "enum": ["uniform", "normal", "lognormal", "triangular", "discrete"] },
+        "parameters": { "type": "object" },
+        "unit": { "type": "string" },
+        "source": { "type": "string" },
+        "epistemic_or_aleatory": { "type": "string", "enum": ["epistemic", "aleatory"] }
+      }
+    },
+    "solver": {
+      "type": "object",
+      "properties": {
+        "max_iterations": { "type": "integer", "minimum": 1, "maximum": 10000, "default": 100 },
+        "convergence_tolerance_k": { "type": "number", "minimum": 0.001, "maximum": 100, "default": 0.1 },
+        "n_vertical_layers": { "type": "integer", "minimum": 5, "maximum": 200, "default": 30 },
+        "surface_pressure_iterations": { "type": "integer", "minimum": 1, "maximum": 100, "default": 10 }
+      }
+    },
+    "provenance": {
+      "type": "object",
+      "properties": {
+        "created_at": { "type": "string", "format": "date-time" },
+        "created_by": { "type": "string" },
+        "input_hash": { "type": "string" },
+        "data_versions": { "type": "object", "additionalProperties": { "type": "string" } },
+        "citations": { "type": "array", "items": { "type": "string" } }
+      }
+    }
+  }
+}
