@@ -161,7 +161,7 @@ function initShader() {
     if (!probe.getContext('webgl') && !probe.getContext('experimental-webgl')) {
       throw new Error('WebGL not supported by this browser');
     }
-    shader = new ShaderEngine(refs.webgl);
+    shader = new ShaderEngine(refs.webgl, refs.visualEngine);
     shader.setupScene();
   } catch (err) {
     console.warn('AETHER: 3D renderer unavailable — running in panel-only mode.', err);
@@ -213,6 +213,7 @@ const safeStorage = {
 
 function cacheRefs() {
   refs.webgl = document.getElementById('webgl-viewport');
+  refs.visualEngine = $('.visual-engine');
   refs.fps   = document.getElementById('fps-readout');
   refs.hudMode = $('#hud-mode');
   refs.hudTarget = $('#hud-target');
@@ -666,36 +667,105 @@ function bindVisibility() {
 }
 function bindMobileDock() {
   const isMobile = () => window.innerWidth < 1024;
-  // Tap WebGL closes the dock
-  refs.webgl.addEventListener('pointerdown', e => {
-    if (!isMobile()) return;
-    const onUp = ev => {
-      refs.webgl.removeEventListener('pointerup', onUp);
-      refs.webgl.removeEventListener('pointercancel', onUp);
-      if (Math.hypot(ev.clientX-e.clientX, ev.clientY-e.clientY) < 6 && state.ui.mobileDockOpen) {
-        state.ui.mobileDockOpen = false; refs.controlPanel.classList.remove('is-docked');
+  // Tap visual engine / WebGL closes the dock
+  const visualSurface = refs.visualEngine || refs.webgl;
+  if (visualSurface) {
+    visualSurface.addEventListener('pointerdown', e => {
+      if (!isMobile()) return;
+      const onUp = ev => {
+        visualSurface.removeEventListener('pointerup', onUp);
+        visualSurface.removeEventListener('pointercancel', onUp);
+        if (Math.hypot(ev.clientX - e.clientX, ev.clientY - e.clientY) < 6 && state.ui.mobileDockOpen) {
+          state.ui.mobileDockOpen = false;
+          refs.controlPanel.classList.remove('is-docked');
+        }
+      };
+      visualSurface.addEventListener('pointerup', onUp);
+      visualSurface.addEventListener('pointercancel', onUp);
+    });
+  }
+
+  // Swipe or tap mode-tabs / tab-bar (or collapsed panel) to open/close dock
+  const dragSurfaces = $$('.mode-tabs, .tab-bar');
+  dragSurfaces.forEach(surface => {
+    let startY = 0, started = false, wasDragged = false;
+    surface.style.touchAction = 'none';
+    surface.style.cursor = 'grab';
+
+    const onMove = (e) => {
+      if (!started || !isMobile()) return;
+      const dy = startY - e.clientY;
+      if (Math.abs(dy) > 15) {
+        wasDragged = true;
+      }
+      if (dy > 30 && !state.ui.mobileDockOpen) {
+        state.ui.mobileDockOpen = true;
+        refs.controlPanel.classList.add('is-docked');
+      } else if (dy < -30 && state.ui.mobileDockOpen) {
+        state.ui.mobileDockOpen = false;
+        refs.controlPanel.classList.remove('is-docked');
       }
     };
-    refs.webgl.addEventListener('pointerup', onUp); refs.webgl.addEventListener('pointercancel', onUp);
-  });
-  // Swipe tab-bar vertically to open/close dock
-  const tabBar = $('.tab-bar');
-  if (tabBar) {
-    let startY=0, started=false;
-    tabBar.style.touchAction='none'; tabBar.style.cursor='grab';
-    tabBar.addEventListener('pointerdown', e => {
-      if (!isMobile()) return;
-      startY = e.clientY; started = true;
-      e.currentTarget.setPointerCapture(e.pointerId);
-    });
-    tabBar.addEventListener('pointermove', e => {
-      if (!started) return;
+
+    const onUp = (e) => {
+      if (!started || !isMobile()) return;
       const dy = startY - e.clientY;
-      if (dy > 30) { state.ui.mobileDockOpen=true; refs.controlPanel.classList.add('is-docked'); }
-      else if (dy < -30) { state.ui.mobileDockOpen=false; refs.controlPanel.classList.remove('is-docked'); }
+      started = false;
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onUp);
+      window.removeEventListener('pointercancel', onUp);
+
+      setTimeout(() => { wasDragged = false; }, 50);
+
+      if (!wasDragged && dy >= -15 && !state.ui.mobileDockOpen) {
+        state.ui.mobileDockOpen = true;
+        refs.controlPanel.classList.add('is-docked');
+      }
+    };
+
+    surface.addEventListener('pointerdown', e => {
+      if (!isMobile()) return;
+      startY = e.clientY;
+      started = true;
+      wasDragged = false;
+      window.addEventListener('pointermove', onMove);
+      window.addEventListener('pointerup', onUp);
+      window.addEventListener('pointercancel', onUp);
     });
-    tabBar.addEventListener('pointerup', ()=>started=false);
-    tabBar.addEventListener('pointercancel', ()=>started=false);
+
+    surface.addEventListener('click', () => {
+      if (!isMobile() || wasDragged) return;
+      if (!state.ui.mobileDockOpen) {
+        state.ui.mobileDockOpen = true;
+        refs.controlPanel.classList.add('is-docked');
+      }
+    });
+  });
+
+  // Also allow swiping up anywhere on the collapsed control-panel container
+  if (refs.controlPanel) {
+    let startY = 0, started = false;
+    const onPanelMove = (e) => {
+      if (!started || !isMobile() || state.ui.mobileDockOpen) return;
+      if (startY - e.clientY > 30) {
+        state.ui.mobileDockOpen = true;
+        refs.controlPanel.classList.add('is-docked');
+      }
+    };
+    const onPanelUp = () => {
+      started = false;
+      window.removeEventListener('pointermove', onPanelMove);
+      window.removeEventListener('pointerup', onPanelUp);
+      window.removeEventListener('pointercancel', onPanelUp);
+    };
+    refs.controlPanel.addEventListener('pointerdown', (e) => {
+      if (!isMobile() || state.ui.mobileDockOpen) return;
+      startY = e.clientY;
+      started = true;
+      window.addEventListener('pointermove', onPanelMove);
+      window.addEventListener('pointerup', onPanelUp);
+      window.addEventListener('pointercancel', onPanelUp);
+    });
   }
 }
 function onResize() { if (shader) shader.resize(); }
