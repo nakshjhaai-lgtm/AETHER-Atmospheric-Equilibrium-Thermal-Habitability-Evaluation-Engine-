@@ -391,7 +391,7 @@
             </div>
           </div>
 
-          <!-- QHF Result (rendered by ResultRenderer) -->
+          <!-- QHF Result (rendered by integration.js renderQHFResult) -->
           <div class="card advanced-only" id="qhf-result-card" style="display:none;">
             <div class="card__head">
               <h3>Habitability Assessment</h3>
@@ -487,10 +487,14 @@
               <button class="action-btn" id="btn-export-scenario" type="button">
                 <span>Export Current</span>
               </button>
+              <button class="action-btn" id="btn-export-gcm" data-backend="rocke3d" type="button">
+                <span>Export GCM (ROCKE-3D)</span>
+              </button>
               <button class="action-btn" id="btn-import-scenario" type="button">
                 <span>Import &amp; Apply</span>
               </button>
             </div>
+            <p class="sensor-note" style="margin-top:6px;">GCM export writes a scenario configuration file for an external GCM (ROCKE-3D/ExoCAM). It is an exporter only: AETHER does not run 3D climate models.</p>
             <div id="scenario-status" aria-live="polite" class="sensor-note" style="margin-top:8px;"></div>
           </div>
 

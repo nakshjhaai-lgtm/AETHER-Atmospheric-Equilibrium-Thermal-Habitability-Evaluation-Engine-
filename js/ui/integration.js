@@ -3,6 +3,7 @@
 
 import { ScenarioValidator } from '../schema/validate-scenario.js';
 import { ATMOSPHERE_PRESETS } from '../schema/constants.js';
+import { GCMAdapter } from '../visualization/gcm-adapter.js';
 import { $$ } from './dom.js';
 
 
@@ -120,6 +121,8 @@ export function bindScenarioEditor(adapter, state, currentFidelityRef, currentTa
   const btnExport = document.getElementById('btn-export-scenario');
   const btnImport = document.getElementById('btn-import-scenario');
   const statusEl = document.getElementById('scenario-status');
+  // GCM scenario exporter (js/visualization/gcm-adapter.js) — exports, does not run GCMs.
+  const gcmAdapter = new GCMAdapter();
 
   if (btnExport) {
     btnExport.addEventListener('click', () => {
@@ -129,6 +132,21 @@ export function bindScenarioEditor(adapter, state, currentFidelityRef, currentTa
         textarea.value = JSON.stringify(scenario, null, 2);
         statusEl.textContent = 'Scenario exported from current settings.';
       }
+    });
+  }
+
+  const btnExportGcm = document.getElementById('btn-export-gcm');
+  if (btnExportGcm) {
+    btnExportGcm.addEventListener('click', () => {
+      const scenario = adapter.toScenario();
+      if (!scenario) { statusEl.textContent = 'No scenario to export.'; return; }
+      scenario.biology_target = { target_type: currentTargetRef.value };
+      const backend = btnExportGcm.dataset.backend ?? 'rocke3d';
+      const file = backend === 'exocam'
+        ? gcmAdapter.generateExoCAMScenario(scenario)
+        : gcmAdapter.generateRocke3DScenario(scenario);
+      textarea.value = JSON.stringify(file, null, 2);
+      statusEl.textContent = `Exported ${backend} GCM scenario file (config only; not run).`;
     });
   }
 

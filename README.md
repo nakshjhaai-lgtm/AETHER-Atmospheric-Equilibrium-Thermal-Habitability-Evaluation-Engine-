@@ -117,8 +117,9 @@ uvicorn python.api.main:app --reload --port 8000
 │   │   ├── qhf.js                      QHF habitat + viability
 │   │   └── uncertainty.js              Sampling and sensitivity
 │   ├── ui/
-│   │   ├── mode-controller.js          Beginner/Advanced/Expert
-│   │   └── result-renderer.js          Mode-appropriate results
+│   │   ├── dom.js                      Shared $ / $$ DOM helpers
+│   │   ├── integration.js              Mode wiring + QHF result rendering
+│   │   └── mode-controller.js          Beginner/Advanced/Expert
 │   ├── visualization/
 │   │   └── gcm-adapter.js              GCM scenario file exporter
 │   └── workers/

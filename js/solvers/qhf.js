@@ -4,6 +4,7 @@
 // https://arxiv.org/html/2505.22808
 
 import { ORGANISM_MODELS } from '../schema/constants.js';
+import { UncertaintyEngine } from './uncertainty.js';
 
 export class QHFSolver {
   constructor() {
@@ -250,51 +251,15 @@ export class QHFSolver {
     };
   }
 
+  // Sampling is delegated to js/solvers/uncertainty.js (UncertaintyEngine), which is the
+  // single source of truth for Latin Hypercube / Monte Carlo sampling in the JS solvers.
   _generateSamples(distributions, nSamples, method, seed) {
-    const samples = [];
-    const rng = this._seededRNG(seed);
-
-    for (let i = 0; i < nSamples; i++) {
-      const sample = {};
-      for (const dist of (distributions || [])) {
-        sample[dist.variable] = this._sampleDistribution(dist, rng);
-      }
-      samples.push(sample);
+    const engine = new UncertaintyEngine();
+    const dists = distributions || [];
+    if (method === 'latin_hypercube') {
+      return engine.latinHypercubeSample(dists, nSamples, seed);
     }
-    return samples;
-  }
-
-  _sampleDistribution(dist, rng) {
-    const p = dist.parameters;
-    switch (dist.distribution) {
-      case 'uniform':
-        return p.min + rng() * (p.max - p.min);
-      case 'normal':
-        // Box-Muller transform
-        const u1 = rng(), u2 = rng();
-        const z = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
-        return p.mean + z * p.std;
-      case 'lognormal':
-        const lu1 = rng(), lu2 = rng();
-        const lz = Math.sqrt(-2 * Math.log(lu1)) * Math.cos(2 * Math.PI * lu2);
-        return Math.exp(p.mu + lz * p.sigma);
-      case 'triangular':
-        const r = rng();
-        const f = (p.peak - p.min) / (p.max - p.min);
-        return r < f
-          ? p.min + Math.sqrt(r * (p.max - p.min) * (p.peak - p.min))
-          : p.max - Math.sqrt((1 - r) * (p.max - p.min) * (p.max - p.peak));
-      default:
-        return p.mean ?? p.min ?? 0;
-    }
-  }
-
-  _seededRNG(seed) {
-    let s = seed;
-    return () => {
-      s = (s * 1103515245 + 12345) & 0x7fffffff;
-      return s / 0x7fffffff;
-    };
+    return engine.monteCarloSample(dists, nSamples, seed);
   }
 
   _perturbHabitatState(baseState, sample) {

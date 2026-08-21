@@ -10,7 +10,6 @@ import { AdvancedClimateSolver } from './solvers/advanced-climate.js';
 import { QHFSolver } from './solvers/qhf.js';
 
 import { ModeController } from './ui/mode-controller.js';
-import { ResultRenderer } from './ui/result-renderer.js';
 import { $, $$ } from './ui/dom.js';
 import { bindModeSelector, bindAtmosphereControls, bindBiologyTarget, bindScenarioEditor, renderQHFResult } from './ui/integration.js';
 import { ShaderEngine } from './shader-engine.js';
@@ -73,7 +72,7 @@ const reducedSolver = new ReducedClimateSolver();
 const advancedSolver = new AdvancedClimateSolver();
 const qhfSolver = new QHFSolver();
 const modeController = new ModeController();
-let resultRenderer = null;
+let climateWorker = null; // js/workers/climate-worker.js (see initClimateWorker)
 let currentBiologyTarget = 'surface_liquid_water';
 let currentFidelity = 'reduced';
 
@@ -96,8 +95,7 @@ window.addEventListener('DOMContentLoaded', () => {
   bindScenarioEditor(adapter, state, { get value() { return currentFidelity; }, set value(v) { currentFidelity = v; } }, { get value() { return currentBiologyTarget; }, set value(v) { currentBiologyTarget = v; } });
   detectCapabilities();
   loadStateFromURL();
-
-  resultRenderer = new ResultRenderer(document.getElementById('qhf-result-body'));
+  initClimateWorker();
 
   applyStellarPreset('G', true);
   applyCorePreset('silicate', true);
@@ -646,6 +644,26 @@ function detectCapabilities() {
   }
 }
 
+// ---------- Climate Web Worker ----------
+// Wires up js/workers/climate-worker.js as an off-main-thread solver. Module workers
+// are used so the worker reuses the shared js/solvers/climate-utils.js implementations.
+// Creation is guarded: in environments where module workers are unsupported the app
+// keeps running on the main thread (the worker is an optimization, not a dependency).
+function initClimateWorker() {
+  if (typeof Worker === 'undefined') return;
+  try {
+    climateWorker = new Worker(new URL('./workers/climate-worker.js', import.meta.url), { type: 'module' });
+    const onMsg = (e) => {
+      if (e.data && e.data.type === 'PONG') climateWorker.ready = true;
+    };
+    climateWorker.addEventListener('message', onMsg);
+    climateWorker.addEventListener('error', () => { climateWorker = null; });
+    climateWorker.postMessage({ type: 'PING', id: 0 });
+  } catch (e) {
+    climateWorker = null; // fall back to main-thread solvers
+  }
+}
+
 // ---------- Disclaimer Banner ----------
 function bindDisclaimer() {
   const banner = document.getElementById('disclaimer-banner');
@@ -1018,9 +1036,9 @@ function syncUI() {
   updatePlanetCross();
   updateSpectrum();
   refs.fps.textContent = shader.fps;
-  // Render QHF result in advanced/expert mode
+  // Render QHF result in advanced/expert mode (rendering is done by integration.js's renderQHFResult)
   if (state.planet.qhfResult && modeController.currentMode !== "beginner") {
-    renderQHFResult(state.planet.qhfResult, resultRenderer, modeController.currentMode);
+    renderQHFResult(state.planet.qhfResult, null, modeController.currentMode);
   }
 }
 
