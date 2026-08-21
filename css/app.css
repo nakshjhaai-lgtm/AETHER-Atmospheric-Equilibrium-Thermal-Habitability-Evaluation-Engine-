@@ -967,8 +967,11 @@ input[type="range"]:focus-visible::-webkit-slider-thumb { outline: 2px solid var
   .oscope { left: auto; right: 12px; bottom: 12px; }
   .oscope canvas { width: 160px; height: 44px; }
   .oscope__label { font-size: 8px; }
-  .hud-hint { top: 10px; left: 12px; font-size: 9px; pointer-events: auto; cursor: pointer; }
-  .preset-drawer { display: none; }
+  .hud-hint { top: 10px; left: 12px; font-size: 9px; pointer-events: none; }
+  /* Mobile preset access: the preset drawer stays available (collapsed strip with
+     an expand handle) so Earth/Mars/Venus and exoplanet presets remain reachable on
+     small screens; it is NOT hidden. It is also reachable via the catalog overlay. */
+  .preset-drawer { height: var(--drawer-h-collapsed); }
 
   .reticle { width: 64px; height: 64px; }
   .reticle svg { width: 64px; height: 64px; }

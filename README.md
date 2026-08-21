@@ -101,7 +101,6 @@ uvicorn python.api.main:app --reload --port 8000
 │   ├── app.js                          Orchestrator
 │   ├── audio-engine.js                 Web Audio sonification
 │   ├── shader-engine.js                Three.js WebGL renderer
-│   ├── math-engine.js                  Backward-compatibility bridge
 │   ├── schema/
 │   │   ├── constants.js                All scientific constants, gas properties, presets, organism models
 │   │   └── validate-scenario.js        Scenario validator

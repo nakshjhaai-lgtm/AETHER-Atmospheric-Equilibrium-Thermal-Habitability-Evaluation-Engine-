@@ -50,7 +50,7 @@ const CATALOG_PRESETS = [
 
 // ---------- State ----------
 const state = {
-  mode: 'astrobiology',
+  mode: 'beginner',
   telemetry: false,
   star: { teff: 5780, rstar: 1.00, lum: 1.00, preset: 'G' },
   planet: {
