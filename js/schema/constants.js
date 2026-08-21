@@ -102,11 +102,15 @@ export const ATMOSPHERE_PRESETS = {
   }
 };
 
-// Kopparapu et al. (2013) polynomial coefficients for habitable zone boundaries
+// Kopparapu et al. (2013) polynomial coefficients for habitable zone boundaries.
+// Source: Kopparapu et al. (2013), ApJ 765, 131, Table 1
+// (doi:10.1088/0004-637X/765/2/131; companion tables in arXiv:1404.5292).
+// S_eff⊙ values for 1 M⊕: recent Venus 1.776, runaway greenhouse 1.107,
+// maximum greenhouse 0.356, early Mars 0.320.
 export const KOPPARAPU_COEFFS = {
-  recentVenus:       { seffSun: 1.766, a: 2.136e-4,  b: 2.533e-8,  c: -1.332e-11, d: -3.097e-15 },
+  recentVenus:       { seffSun: 1.776, a: 2.136e-4,  b: 2.533e-8,  c: -1.332e-11, d: -3.097e-15 },
   runawayGreenhouse: { seffSun: 1.107, a: 1.332e-4,  b: 1.580e-8,  c: -8.308e-12, d: -1.931e-15 },
-  maximumGreenhouse: { seffSun: 0.356, a: 6.171e-5,  b: 1.689e-9,  c: -3.198e-12, d: -5.575e-16 },
+  maximumGreenhouse: { seffSun: 0.356, a: 6.171e-5,  b: 1.698e-9,  c: -3.198e-12, d: -5.575e-16 },
   earlyMars:         { seffSun: 0.320, a: 5.547e-5,  b: 1.526e-9,  c: -2.874e-12, d: -5.011e-16 }
 };
 
