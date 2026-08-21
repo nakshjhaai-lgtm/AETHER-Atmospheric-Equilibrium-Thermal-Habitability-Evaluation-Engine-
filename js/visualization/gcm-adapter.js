@@ -5,6 +5,8 @@
 // Generated files must be submitted to the actual GCM backend separately.
 // Reference: ROCKE-3D (NASA GISS), ExoCAM, LMD-G
 
+import { VERSION } from '../schema/constants.js';
+
 export class GCMAdapter {
   constructor() {
     this.supportedBackends = ['rocke3d', 'exocam', 'lmdg'];
@@ -15,7 +17,7 @@ export class GCMAdapter {
     return {
       format: 'rocke3d-2.0',
       generated_at: new Date().toISOString(),
-      aether_version: '2.0.0',
+      aether_version: VERSION,
       note: 'This is a scenario file for ROCKE-3D. It must be run on a compatible GCM server.',
 
       // ROCKE-3D format
@@ -62,7 +64,7 @@ export class GCMAdapter {
     return {
       format: 'exocam',
       generated_at: new Date().toISOString(),
-      aether_version: '2.0.0',
+      aether_version: VERSION,
       note: 'This is a scenario file for ExoCAM. Run on NCAR Cheyenne or equivalent HPC.',
 
       // ExoCAM uses CESM/CAM framework

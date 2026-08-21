@@ -27,7 +27,7 @@ All notable scientific and architectural changes to AETHER.
 - **IMPROVED** QHF: derives H₂/CO₂ partial pressures from gas composition when available
 
 ### Tests
-- 47 tests passing (was 35)
+- Test suite expanded since this entry: currently **109 tests** across unit, benchmark, and scientific (was 47 at this release, 35 before). Run `npm test` for the live count.
 - New atmosphere integration tests proving controls affect solver output
 - New legacy-state test proving gas composition flows to adapter
 - Solar System benchmarks: Earth, Mars, Venus, vacuum

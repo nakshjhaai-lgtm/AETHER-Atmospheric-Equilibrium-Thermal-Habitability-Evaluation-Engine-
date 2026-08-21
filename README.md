@@ -101,7 +101,6 @@ uvicorn python.api.main:app --reload --port 8000
 │   ├── app.js                          Orchestrator
 │   ├── audio-engine.js                 Web Audio sonification
 │   ├── shader-engine.js                Three.js WebGL renderer
-│   ├── math-engine.js                  Backward-compatibility bridge
 │   ├── schema/
 │   │   ├── constants.js                All scientific constants, gas properties, presets, organism models
 │   │   └── validate-scenario.js        Scenario validator
@@ -118,8 +117,9 @@ uvicorn python.api.main:app --reload --port 8000
 │   │   ├── qhf.js                      QHF habitat + viability
 │   │   └── uncertainty.js              Sampling and sensitivity
 │   ├── ui/
-│   │   ├── mode-controller.js          Beginner/Advanced/Expert
-│   │   └── result-renderer.js          Mode-appropriate results
+│   │   ├── dom.js                      Shared $ / $$ DOM helpers
+│   │   ├── integration.js              Mode wiring + QHF result rendering
+│   │   └── mode-controller.js          Beginner/Advanced/Expert
 │   ├── visualization/
 │   │   └── gcm-adapter.js              GCM scenario file exporter
 │   └── workers/
@@ -217,7 +217,19 @@ uvicorn python.api.main:app --reload --port 8000
 
 ## License
 
-See repository for license details.
+AETHER is released under the [MIT License](LICENSE).
+
+## Privacy
+
+AETHER runs entirely in your browser. It has no accounts, no analytics, no
+cookies, and no network calls that transmit your activity. It only stores small
+UI preferences in `localStorage`/`sessionStorage` and loads Three.js and Google
+Fonts from CDNs. See the [Privacy Policy](PRIVACY.md).
+
+## Contact
+
+For questions or to report a problem, open a GitHub issue:
+<https://github.com/nakshjhaai-lgtm/AETHER-Atmospheric-Equilibrium-Thermal-Habitability-Evaluation-Engine-/issues>
 
 ---
 

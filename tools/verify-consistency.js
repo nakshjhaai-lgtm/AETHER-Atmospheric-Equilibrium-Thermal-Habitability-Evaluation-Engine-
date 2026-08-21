@@ -88,7 +88,7 @@ for (const f of govFiles) {
 // 7. Check test files
 console.log('7. Test Files');
 const testFiles = [
-  'tests/unit/test-math-engine.test.js',
+  'tests/unit/test-reduced-climate.test.js',
   'tests/unit/test-schema-validation.test.js',
   'tests/unit/test-atmosphere-integration.test.js',
   'tests/unit/test-model-registry.test.js',

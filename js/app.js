@@ -10,7 +10,7 @@ import { AdvancedClimateSolver } from './solvers/advanced-climate.js';
 import { QHFSolver } from './solvers/qhf.js';
 
 import { ModeController } from './ui/mode-controller.js';
-import { ResultRenderer } from './ui/result-renderer.js';
+import { $, $$ } from './ui/dom.js';
 import { bindModeSelector, bindAtmosphereControls, bindBiologyTarget, bindScenarioEditor, renderQHFResult } from './ui/integration.js';
 import { ShaderEngine } from './shader-engine.js';
 import { AudioEngine, freqToNote } from './audio-engine.js';
@@ -21,8 +21,8 @@ const BOTTOM_PRESETS = [
     state:{ stellar:'G', pDistance:1.00, pRadius:1.00, pMass:1.00, pAlbedo:0.30, pTau:1.50, core:'silicate', label:'EARTH SYSTEM' } },
   { id:'mars',     name:'Mars System',      badge:'G-Type', stellarClass:'G-Type (Sol)',      flux:0.43, radius:0.53, desc:'Sub-freezing desert world. Observed values: radius 0.53 R⊕, orbit 1.52 AU. Albedo and τ are estimates.', color:'#ff6600',
     state:{ stellar:'G', pDistance:1.52, pRadius:0.53, pMass:0.107,pAlbedo:0.25, pTau:0.40, core:'silicate', label:'MARS SYSTEM' } },
-  { id:'venus',    name:'Venus System',     badge:'G-Type', stellarClass:'G-Type (Sol)',      flux:1.91, radius:0.95, desc:'Runaway greenhouse state. Observed: radius 0.95 R⊕, orbit 0.72 AU. τ≈12 is an illustrative extreme.', color:'#ffe600',
-    state:{ stellar:'G', pDistance:0.72, pRadius:0.95, pMass:0.815,pAlbedo:0.75, pTau:12.0, core:'silicate', label:'VENUS SYSTEM' } },
+  { id:'venus',    name:'Venus System',     badge:'G-Type', stellarClass:'G-Type (Sol)',      flux:1.91, radius:0.95, desc:'Runaway greenhouse state. Observed: radius 0.95 R⊕, orbit 0.72 AU. τ=50 is the model\'s calibrated runaway-greenhouse value (matches the Venus CO₂ atmosphere preset).', color:'#ffe600',
+    state:{ stellar:'G', pDistance:0.72, pRadius:0.95, pMass:0.815,pAlbedo:0.75, pTau:50.0, core:'silicate', label:'VENUS SYSTEM' } },
   { id:'trappist', name:'TRAPPIST-1e',      badge:'M-Type', stellarClass:'M-Type (Red Dwarf)',flux:0.66, radius:0.92, desc:'Candidate in an ultra-cool dwarf system. Radius and orbit are observed; albedo and τ are estimated.', color:'#ff6a30',
     state:{ stellar:'M', pDistance:0.029,pRadius:0.92, pMass:0.69, pAlbedo:0.30, pTau:1.20, core:'silicate', label:'TRAPPIST-1E' } },
   { id:'kepler452',name:'Kepler-452b',      badge:'G-Type', stellarClass:'G-Type (Aged Main)',flux:1.10, radius:1.63, desc:'Super-Earth orbiting a sun-like star. Radius is observed; mass is estimated. Albedo and τ are assumed.', color:'#6aa8ff',
@@ -49,7 +49,7 @@ const CATALOG_PRESETS = [
 
 // ---------- State ----------
 const state = {
-  mode: 'astrobiology',
+  mode: 'beginner',
   telemetry: false,
   star: { teff: 5780, rstar: 1.00, lum: 1.00, preset: 'G' },
   planet: {
@@ -63,9 +63,7 @@ const state = {
   _dirty: { ui:true, lastUI:0, lastPhysics:0, lastScope:0, _lastClimate:null }
 };
 
-// DOM refs (cached at startup)
-const $ = (s, r=document) => r.querySelector(s);
-const $$ = (s, r=document) => [...r.querySelectorAll(s)];
+// DOM refs (cached at startup). `$` and `$$` come from js/ui/dom.js.
 const refs = {};
 
 let shader, audio, running = true;
@@ -74,7 +72,7 @@ const reducedSolver = new ReducedClimateSolver();
 const advancedSolver = new AdvancedClimateSolver();
 const qhfSolver = new QHFSolver();
 const modeController = new ModeController();
-let resultRenderer = null;
+let climateWorker = null; // js/workers/climate-worker.js (see initClimateWorker)
 let currentBiologyTarget = 'surface_liquid_water';
 let currentFidelity = 'reduced';
 
@@ -97,8 +95,7 @@ window.addEventListener('DOMContentLoaded', () => {
   bindScenarioEditor(adapter, state, { get value() { return currentFidelity; }, set value(v) { currentFidelity = v; } }, { get value() { return currentBiologyTarget; }, set value(v) { currentBiologyTarget = v; } });
   detectCapabilities();
   loadStateFromURL();
-
-  resultRenderer = new ResultRenderer(document.getElementById('qhf-result-body'));
+  initClimateWorker();
 
   applyStellarPreset('G', true);
   applyCorePreset('silicate', true);
@@ -168,7 +165,6 @@ function cacheRefs() {
   refs.specPath = $('#spectrum-path'); refs.specLine = $('#spectrum-line');
   refs.btnTelemetry = $('#btn-telemetry');
   refs.btnGyro = $('#btn-gyro'); refs.gyroStatus = $('#gyro-status');
-  refs.btnMic = $('#btn-mic'); refs.micStatus = $('#mic-status');
   refs.btnAudio = $('#btn-audio'); refs.audioState = $('#audio-state');
   refs.audioSwitch = refs.btnAudio.querySelector('.toggle-switch');
   refs.sliders = {
@@ -448,15 +444,10 @@ function bindToggles() {
   });
 
   refs.btnGyro.addEventListener('click', requestGyroPermission);
-  refs.btnMic.addEventListener('click', async () => {
-    try {
-      refs.micStatus.textContent = 'REQUEST';
-      if (!navigator.mediaDevices?.getUserMedia) { refs.micStatus.textContent='UNSUPPORTED'; return; }
-      const stream = await navigator.mediaDevices.getUserMedia({audio:true});
-      refs.micStatus.textContent = 'LIVE'; refs.btnMic.classList.add('is-active');
-      setTimeout(()=>{ stream.getTracks().forEach(t=>t.stop()); refs.micStatus.textContent='PASS'; refs.btnMic.classList.remove('is-active'); }, 3000);
-    } catch(_) { refs.micStatus.textContent = 'DENIED'; }
-  });
+  // NOTE (P0-5): The former "Mic Test" button was removed. The site's Permissions-Policy
+  // (netlify.toml) sets `microphone=()` so a getUserMedia({audio:true}) request was always
+  // denied. Keeping the button would over-claim device access; audio capability is already
+  // verified by the Web Audio synthesizer toggle. The strict camera/microphone denial is retained.
 }
 
 function bindChips() {
@@ -650,6 +641,26 @@ function detectCapabilities() {
   if (!window.DeviceOrientationEvent) {
     refs.gyroStatus.textContent = 'UNSUPPORTED';
     if (refs.btnGyro) refs.btnGyro.disabled = true;
+  }
+}
+
+// ---------- Climate Web Worker ----------
+// Wires up js/workers/climate-worker.js as an off-main-thread solver. Module workers
+// are used so the worker reuses the shared js/solvers/climate-utils.js implementations.
+// Creation is guarded: in environments where module workers are unsupported the app
+// keeps running on the main thread (the worker is an optimization, not a dependency).
+function initClimateWorker() {
+  if (typeof Worker === 'undefined') return;
+  try {
+    climateWorker = new Worker(new URL('./workers/climate-worker.js', import.meta.url), { type: 'module' });
+    const onMsg = (e) => {
+      if (e.data && e.data.type === 'PONG') climateWorker.ready = true;
+    };
+    climateWorker.addEventListener('message', onMsg);
+    climateWorker.addEventListener('error', () => { climateWorker = null; });
+    climateWorker.postMessage({ type: 'PING', id: 0 });
+  } catch (e) {
+    climateWorker = null; // fall back to main-thread solvers
   }
 }
 
@@ -864,8 +875,9 @@ function checkCalibrationRange() {
 
   // Kopparapu polynomial valid ~2500-7000K
   if (teff < 2600 || teff > 7200) warnings.push('Stellar temperature outside Kopparapu polynomial range (2500–7000 K)');
-  // Optical depth extremes
-  if (tau > 12) warnings.push('Optical depth > 12 exceeds typical planetary values');
+  // Optical depth extremes: the reduced model is calibrated for τ ∈ [0, 50]
+  // (see scientific-contract §6, "Optical depth (reduced) 0.00–50.0").
+  if (tau > 50) warnings.push('Optical depth > 50 exceeds the reduced model\'s calibrated range');
   if (tau < 0.01 && tau > 0) warnings.push('Near-zero optical depth: model treats as vacuum');
   // Albedo edge
   if (alb > 0.9) warnings.push('Albedo > 0.9: approaching perfect reflector (physically implausible)');
@@ -1024,9 +1036,9 @@ function syncUI() {
   updatePlanetCross();
   updateSpectrum();
   refs.fps.textContent = shader.fps;
-  // Render QHF result in advanced/expert mode
+  // Render QHF result in advanced/expert mode (rendering is done by integration.js's renderQHFResult)
   if (state.planet.qhfResult && modeController.currentMode !== "beginner") {
-    renderQHFResult(state.planet.qhfResult, resultRenderer, modeController.currentMode);
+    renderQHFResult(state.planet.qhfResult, null, modeController.currentMode);
   }
 }
 

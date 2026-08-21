@@ -12,10 +12,18 @@ dependencies = [
   "uvicorn>=0.29.0",
   "pydantic>=2.6.0",
   "numpy>=1.26.0",
-  "scipy>=1.12.0",
-  "xarray>=2024.2.0",
-  "pint>=0.23.0",
+  # slowapi: canonical FastAPI/Starlette rate-limiting extension.
+  # Source: https://pypi.org/project/slowapi/ (latest 0.1.10, released 2026-06).
+  # Note: `scipy`, `xarray`, and `pint` were declared but are NOT imported anywhere
+  # in python/; they were removed as unused dependencies.
+  "slowapi>=0.1.9,<0.2",
 ]
+
+# AETHER is a script/browser app: the Python modules are loaded via sys.path,
+# not installed as a package. This empty-package config lets `pip install -e ".[testing]"`
+# succeed (metadata + dependencies) without setuptools package auto-discovery failing.
+[tool.setuptools]
+packages = []
 
 [project.optional-dependencies]
 photochemistry = ["photochem"]

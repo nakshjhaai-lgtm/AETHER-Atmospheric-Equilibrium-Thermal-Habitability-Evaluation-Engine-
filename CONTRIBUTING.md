@@ -36,7 +36,7 @@ Every scientific change must include:
 ### Code Changes
 
 - Run `npm test` before submitting
-- All 43+ tests must pass
+- All tests must pass (current suite: 109 tests across unit, benchmark, and scientific)
 - Run `npm run lint` (ESLint) before submitting
 - No `eval()` or `new Function()`
 - Use `const` by default, `let` when needed, never `var`

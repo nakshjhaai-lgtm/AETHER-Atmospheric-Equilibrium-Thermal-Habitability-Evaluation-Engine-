@@ -9,4 +9,4 @@
 - [Peer review guide](https://github.com/nakshjhaai-lgtm/AETHER-Atmospheric-Equilibrium-Thermal-Habitability-Evaluation-Engine-/blob/main/docs/peer-review-guide.md)
 
 ## Optional
-- [Live demo](https://aetherplanetary.netlify.app/)
+- [Live demo](https://aether-climate-explorer.netlify.app/)

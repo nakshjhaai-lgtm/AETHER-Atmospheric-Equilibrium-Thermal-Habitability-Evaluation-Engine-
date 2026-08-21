@@ -1,4 +1,4 @@
-// tests/unit/test-math-engine.test.js — Math engine unit tests
+// tests/unit/test-reduced-climate.test.js — Reduced climate & model unit tests
 import { describe, it, expect } from 'vitest';
 import { ReducedClimateSolver } from '../../js/solvers/reduced-climate.js';
 import { StarModel } from '../../js/models/star-model.js';

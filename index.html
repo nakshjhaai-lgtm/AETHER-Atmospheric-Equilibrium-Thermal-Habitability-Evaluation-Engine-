@@ -6,15 +6,15 @@
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='7' fill='%2300e5ff'/%3E%3Cellipse cx='16' cy='16' rx='14' ry='5' fill='none' stroke='%23e0e0fa' stroke-width='1.5' transform='rotate(-20 16 16)'/%3E%3C/svg%3E" />
   <meta name="theme-color" content="#050508" />
   <meta name="description" content="AETHER: An interactive educational planetary climate and habitability explorer. Explore how stellar and planetary parameters influence climate using simplified astrophysical models." />
-  <link rel="canonical" href="https://aetherplanetary.netlify.app/" />
+  <link rel="canonical" href="https://aether-climate-explorer.netlify.app/" />
   <meta property="og:type" content="website" />
   <meta property="og:title" content="AETHER: Interactive Planetary Climate & Habitability Explorer" />
   <meta property="og:description" content="Model stellar and planetary parameters and see climate, habitable zones, and habitability heuristics, entirely in your browser." />
-  <meta property="og:url" content="https://aetherplanetary.netlify.app/" />
-  <meta property="og:image" content="https://aetherplanetary.netlify.app/og.png" />
+  <meta property="og:url" content="https://aether-climate-explorer.netlify.app/" />
+  <meta property="og:image" content="https://aether-climate-explorer.netlify.app/og.png" />
   <meta name="twitter:card" content="summary_large_image" />
   <script type="application/ld+json">
-  {"@context":"https://schema.org","@type":"WebApplication","name":"AETHER","applicationCategory":"EducationalApplication","operatingSystem":"Any (browser)","description":"Interactive planetary climate and habitability explorer using simplified 1D grey-atmosphere physics.","url":"https://aetherplanetary.netlify.app/","offers":{"@type":"Offer","price":"0"}}
+  {"@context":"https://schema.org","@type":"WebApplication","name":"AETHER","applicationCategory":"EducationalApplication","operatingSystem":"Any (browser)","description":"Interactive planetary climate and habitability explorer using simplified 1D grey-atmosphere physics.","url":"https://aether-climate-explorer.netlify.app/","offers":{"@type":"Offer","price":"0"}}
   </script>
   <title>AETHER: Interactive Planetary Climate &amp; Habitability Explorer</title>
   <link rel="stylesheet" href="css/app.css" />
@@ -100,7 +100,7 @@
         </div>
       </div>
 
-      <p class="onboarding-note"><b>What does "habitable" mean here?</b> AETHER estimates whether liquid water <i>could</i> exist on a planet's surface based on temperature. It does not model atmosphere composition, magnetic fields, UV radiation, or biological factors.</p>
+      <p class="onboarding-note"><b>What does "habitable" mean here?</b> AETHER uses simplified 1D grey-atmosphere physics to estimate whether liquid water <i>could</i> exist on a planet's surface. In Advanced and Expert modes it also models atmospheric gas composition and habitability heuristics for eight biological targets; magnetic-field and UV inputs are tracked but not yet surfaced in the output. It is <b>not</b> a general-circulation model and it is <b>not</b> a detector or probability-of-life calculator — all assessments are illustrative, not authoritative.</p>
 
       <button class="btn btn--primary onboarding-go" id="btn-start-exploring" type="button">Start Exploring</button>
     </div>
@@ -145,7 +145,7 @@
 
       <!-- Ambient HUD text (top-left inside canvas) -->
       <div class="hud-hint">
-        <div class="hud-hint__row"><span class="hud-key">MODE</span><span class="hud-val" id="hud-mode">ASTROBIOLOGY</span></div>
+        <div class="hud-hint__row"><span class="hud-key">MODE</span><span class="hud-val" id="hud-mode">BEGINNER</span></div>
         <div class="hud-hint__row"><span class="hud-key">TARGET</span><span class="hud-val" id="hud-target">EARTH SYSTEM</span></div>
         <div class="hud-hint__row"><span class="hud-key">STATUS</span><span class="hud-val hud-val--cyan" id="hud-status" aria-live="polite">WARM TEMPERATE</span></div>
       </div>
@@ -371,11 +371,11 @@
                 <h3>Greenhouse Optical Depth</h3>
                 <span class="card__sub casual-hint">How strongly the atmosphere traps outgoing heat</span>
               </div>
-              <span class="card__sub" data-tooltip="Optical depth (τ) is a dimensionless measure of how strongly the atmosphere absorbs infrared radiation. Higher τ = thicker atmosphere = more heat trapped. τ=0 is vacuum, Earth ≈ 0.85–1.5, Venus ≈ 12.">τ<sub>s</sub> · 1D grey-atmosphere</span>
+              <span class="card__sub" data-tooltip="Optical depth (τ) is a dimensionless measure of how strongly the atmosphere absorbs infrared radiation. Higher τ = thicker atmosphere = more heat trapped. τ=0 is vacuum, Earth ≈ 1.5, Venus preset ≈ 50 (model calibrated range 0–50).">τ<sub>s</sub> · 1D grey-atmosphere</span>
             </div>
             <div class="slider-block">
               <div class="slider-block__row">
-                <input type="range" id="p-tau" min="0.00" max="15.00" step="0.01" value="1.50" aria-label="Greenhouse optical depth" />
+                <input type="range" id="p-tau" min="0.00" max="50.00" step="0.01" value="1.50" aria-label="Greenhouse optical depth" />
                 <div class="num-badge" data-for="p-tau" data-unit="" id="badge-p-tau">1.50</div>
               </div>
               <div class="climate-badge" id="climate-badge" aria-live="polite" aria-label="Climate regime output">
@@ -386,12 +386,12 @@
               </div>
               <div class="model-limitation">
                 <span class="model-limitation__icon">i</span>
-                <span class="model-limitation__text">Climate regime is based on surface temperature only. Atmospheric composition, pressure, water availability, UV radiation, magnetic fields, and geological activity are not modeled.</span>
+                <span class="model-limitation__text">Climate regime is based on surface temperature and optical depth. Water availability, UV radiation, magnetic fields, and geological activity are not modeled; atmospheric gas composition and pressure are modeled in Advanced/Expert modes.</span>
               </div>
             </div>
           </div>
 
-          <!-- QHF Result (rendered by ResultRenderer) -->
+          <!-- QHF Result (rendered by integration.js renderQHFResult) -->
           <div class="card advanced-only" id="qhf-result-card" style="display:none;">
             <div class="card__head">
               <h3>Habitability Assessment</h3>
@@ -487,10 +487,14 @@
               <button class="action-btn" id="btn-export-scenario" type="button">
                 <span>Export Current</span>
               </button>
+              <button class="action-btn" id="btn-export-gcm" data-backend="rocke3d" type="button">
+                <span>Export GCM (ROCKE-3D)</span>
+              </button>
               <button class="action-btn" id="btn-import-scenario" type="button">
                 <span>Import &amp; Apply</span>
               </button>
             </div>
+            <p class="sensor-note" style="margin-top:6px;">GCM export writes a scenario configuration file for an external GCM (ROCKE-3D/ExoCAM). It is an exporter only: AETHER does not run 3D climate models.</p>
             <div id="scenario-status" aria-live="polite" class="sensor-note" style="margin-top:8px;"></div>
           </div>
 
@@ -623,9 +627,10 @@
                 <span class="compare-row__name" style="color:var(--rust)">Mars</span><span>0.53 R⊕</span><span>0.71 ρ⊕</span><span>0.45 v⊕</span><span>0.38 G</span><span>240 K</span><span class="kv--gold" id="cmp-mars-si">0.000</span>
               </div>
               <div class="compare-row" role="row">
-                <span class="compare-row__name" style="color:var(--gold)">Venus</span><span>0.95 R⊕</span><span>0.95 ρ⊕</span><span>0.93 v⊕</span><span>0.91 G</span><span>737 K</span><span id="cmp-venus-si">0.000</span>
+                <span class="compare-row__name" style="color:var(--gold)">Venus</span><span>0.95 R⊕</span><span>0.95 ρ⊕</span><span>0.93 v⊕</span><span>0.91 G</span><span>577 K</span><span id="cmp-venus-si">0.000</span>
               </div>
             </div>
+            <p class="sensor-note" style="margin-top:8px;">Venus T<sub>s</sub> is the value this simplified grey model produces at its τ=50 runaway-greenhouse preset (577 K). Real Venus's measured mean surface temperature is ≈ 737 K; the 1D grey model under-estimates Venus's extreme greenhouse effect and is illustrative, not a reproduction of Venus.</p>
           </div>
         </section>
 
@@ -642,13 +647,8 @@
                 <span>Enable Gyroscope</span>
                 <i id="gyro-status">Off</i>
               </button>
-              <button class="action-btn" id="btn-mic" type="button">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0014 0M12 18v3"/></svg>
-                <span>Mic Test</span>
-                <i id="mic-status">Idle</i>
-              </button>
             </div>
-            <p class="sensor-note">Gyroscope: optional tilt-to-rotate camera. Mouse/touch always works without it. Mic test: checks browser audio capability only: does not record or transmit audio.</p>
+            <p class="sensor-note">Gyroscope: optional tilt-to-rotate camera. Mouse/touch always works without it. Audio capability is verified via the Web Audio synthesizer below (the site's Permissions-Policy keeps camera and microphone disabled).</p>
           </div>
 
           <div class="card">
@@ -766,11 +766,11 @@
           <div class="eq__body">
             <h5>Eddington Approximation: Surface Temperature</h5>
             <p class="formula">T<sub>s</sub><sup>4</sup> = (¾) T<sub>eq</sub><sup>4</sup> · ( τ<sub>s</sub> + ⅔ )</p>
-            <p class="eq__desc">τ (optical depth) is a dimensionless measure of how strongly the atmosphere absorbs outgoing infrared radiation. This implementation treats the atmosphere as a grey, plane-parallel layer and does not model individual gases.</p>
+            <p class="eq__desc">τ (optical depth) is a dimensionless measure of how strongly the atmosphere absorbs outgoing infrared radiation. In the reduced model the atmosphere is treated as a grey, plane-parallel layer with a single optical depth; individual gases are modeled separately in Advanced/Expert mode.</p>
             <div class="eq__vars">
               <div><code>T<sub>s</sub></code>: Surface temperature (K)</div>
               <div><code>T<sub>eq</sub></code>: Equilibrium temperature from Eq. 01 (K)</div>
-              <div><code>τ<sub>s</sub></code>: Surface optical depth (dimensionless, 0–15)</div>
+              <div><code>τ<sub>s</sub></code>: Surface optical depth (dimensionless, 0–50)</div>
             </div>
             <p class="eq__assumption">Assumptions: Uses the Hopf function approximation q(τ) ≈ 2/3. Atmosphere is "grey" (absorbs all wavelengths equally). Does not model convection, clouds, or specific greenhouse gases. At very high τ, the model becomes unreliable.</p>
           </div>
@@ -823,7 +823,7 @@
         </div>
       </div>
       <div class="cite">
-        <b>Data & Privacy:</b> AETHER runs entirely in your browser. No accounts, no analytics, no cookies. No data leaves your device. Report issues: <a href="https://github.com/nakshjhaai-lgtm/AETHER-Atmospheric-Equilibrium-Thermal-Habitability-Evaluation-Engine-/issues" target="_blank" rel="noopener" style="color:var(--cyan)">GitHub Issues</a>.
+        <b>Data & Privacy:</b> AETHER runs entirely in your browser. No accounts, no analytics, no cookies. No data leaves your device. See the <a href="PRIVACY.md" style="color:var(--cyan)">Privacy Policy</a>. Report issues: <a href="https://github.com/nakshjhaai-lgtm/AETHER-Atmospheric-Equilibrium-Thermal-Habitability-Evaluation-Engine-/issues" target="_blank" rel="noopener" style="color:var(--cyan)">GitHub Issues</a>.
         <b style="margin-top:10px;display:block;">References</b>
         <p>Kopparapu, R. K., et al. (2013). "Habitable zones around main-sequence stars: new estimates." <i>The Astrophysical Journal</i>, 765(2), 131. <a href="https://doi.org/10.1088/0004-637X/765/2/131" target="_blank" rel="noopener" style="color:var(--cyan)">doi:10.1088/0004-637X/765/2/131</a></p>
         <p>Schulze-Makuch, D., et al. (2011). "A two-tiered approach to assessing the habitability of exoplanets." <i>Astrobiology</i>, 11(10), 1041–1052. <a href="https://doi.org/10.1089/ast.2010.0592" target="_blank" rel="noopener" style="color:var(--cyan)">doi:10.1089/ast.2010.0592</a></p>
@@ -831,7 +831,7 @@
       </div>
       <div class="model-limitation eq-limitation">
         <span class="model-limitation__icon">!</span>
-        <span class="model-limitation__text"><b>Model Limitations:</b> AETHER uses a 1D grey-atmosphere with fixed albedo input. It does not model: individual atmospheric gases, convection, cloud feedback, magnetic fields, tidal locking, rotation, seasonal variation, geological cycling, water availability, UV radiation, or stellar flares. Results are educational approximations, not predictive science.</span>
+        <span class="model-limitation__text"><b>Model Limitations:</b> AETHER's reduced model uses a 1D grey-atmosphere with fixed albedo input and a single optical-depth parameter; the Advanced/Expert models add gas-specific opacity and a radiative-convective column. It does not model: convection, cloud feedback, magnetic fields, tidal locking, rotation, seasonal variation, geological cycling, water availability, UV radiation, or stellar flares. Results are educational approximations, not predictive science.</span>
       </div>
     </div>
   </aside>
