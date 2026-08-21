@@ -371,11 +371,11 @@
                 <h3>Greenhouse Optical Depth</h3>
                 <span class="card__sub casual-hint">How strongly the atmosphere traps outgoing heat</span>
               </div>
-              <span class="card__sub" data-tooltip="Optical depth (τ) is a dimensionless measure of how strongly the atmosphere absorbs infrared radiation. Higher τ = thicker atmosphere = more heat trapped. τ=0 is vacuum, Earth ≈ 0.85–1.5, Venus ≈ 12.">τ<sub>s</sub> · 1D grey-atmosphere</span>
+              <span class="card__sub" data-tooltip="Optical depth (τ) is a dimensionless measure of how strongly the atmosphere absorbs infrared radiation. Higher τ = thicker atmosphere = more heat trapped. τ=0 is vacuum, Earth ≈ 1.5, Venus preset ≈ 50 (model calibrated range 0–50).">τ<sub>s</sub> · 1D grey-atmosphere</span>
             </div>
             <div class="slider-block">
               <div class="slider-block__row">
-                <input type="range" id="p-tau" min="0.00" max="15.00" step="0.01" value="1.50" aria-label="Greenhouse optical depth" />
+                <input type="range" id="p-tau" min="0.00" max="50.00" step="0.01" value="1.50" aria-label="Greenhouse optical depth" />
                 <div class="num-badge" data-for="p-tau" data-unit="" id="badge-p-tau">1.50</div>
               </div>
               <div class="climate-badge" id="climate-badge" aria-live="polite" aria-label="Climate regime output">
@@ -623,9 +623,10 @@
                 <span class="compare-row__name" style="color:var(--rust)">Mars</span><span>0.53 R⊕</span><span>0.71 ρ⊕</span><span>0.45 v⊕</span><span>0.38 G</span><span>240 K</span><span class="kv--gold" id="cmp-mars-si">0.000</span>
               </div>
               <div class="compare-row" role="row">
-                <span class="compare-row__name" style="color:var(--gold)">Venus</span><span>0.95 R⊕</span><span>0.95 ρ⊕</span><span>0.93 v⊕</span><span>0.91 G</span><span>737 K</span><span id="cmp-venus-si">0.000</span>
+                <span class="compare-row__name" style="color:var(--gold)">Venus</span><span>0.95 R⊕</span><span>0.95 ρ⊕</span><span>0.93 v⊕</span><span>0.91 G</span><span>577 K</span><span id="cmp-venus-si">0.000</span>
               </div>
             </div>
+            <p class="sensor-note" style="margin-top:8px;">Venus T<sub>s</sub> is the value this simplified grey model produces at its τ=50 runaway-greenhouse preset (577 K). Real Venus's measured mean surface temperature is ≈ 737 K; the 1D grey model under-estimates Venus's extreme greenhouse effect and is illustrative, not a reproduction of Venus.</p>
           </div>
         </section>
 
@@ -770,7 +771,7 @@
             <div class="eq__vars">
               <div><code>T<sub>s</sub></code>: Surface temperature (K)</div>
               <div><code>T<sub>eq</sub></code>: Equilibrium temperature from Eq. 01 (K)</div>
-              <div><code>τ<sub>s</sub></code>: Surface optical depth (dimensionless, 0–15)</div>
+              <div><code>τ<sub>s</sub></code>: Surface optical depth (dimensionless, 0–50)</div>
             </div>
             <p class="eq__assumption">Assumptions: Uses the Hopf function approximation q(τ) ≈ 2/3. Atmosphere is "grey" (absorbs all wavelengths equally). Does not model convection, clouds, or specific greenhouse gases. At very high τ, the model becomes unreliable.</p>
           </div>

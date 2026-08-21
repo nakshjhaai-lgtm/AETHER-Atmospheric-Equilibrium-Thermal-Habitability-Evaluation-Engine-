@@ -22,8 +22,8 @@ const BOTTOM_PRESETS = [
     state:{ stellar:'G', pDistance:1.00, pRadius:1.00, pMass:1.00, pAlbedo:0.30, pTau:1.50, core:'silicate', label:'EARTH SYSTEM' } },
   { id:'mars',     name:'Mars System',      badge:'G-Type', stellarClass:'G-Type (Sol)',      flux:0.43, radius:0.53, desc:'Sub-freezing desert world. Observed values: radius 0.53 R⊕, orbit 1.52 AU. Albedo and τ are estimates.', color:'#ff6600',
     state:{ stellar:'G', pDistance:1.52, pRadius:0.53, pMass:0.107,pAlbedo:0.25, pTau:0.40, core:'silicate', label:'MARS SYSTEM' } },
-  { id:'venus',    name:'Venus System',     badge:'G-Type', stellarClass:'G-Type (Sol)',      flux:1.91, radius:0.95, desc:'Runaway greenhouse state. Observed: radius 0.95 R⊕, orbit 0.72 AU. τ≈12 is an illustrative extreme.', color:'#ffe600',
-    state:{ stellar:'G', pDistance:0.72, pRadius:0.95, pMass:0.815,pAlbedo:0.75, pTau:12.0, core:'silicate', label:'VENUS SYSTEM' } },
+  { id:'venus',    name:'Venus System',     badge:'G-Type', stellarClass:'G-Type (Sol)',      flux:1.91, radius:0.95, desc:'Runaway greenhouse state. Observed: radius 0.95 R⊕, orbit 0.72 AU. τ=50 is the model\'s calibrated runaway-greenhouse value (matches the Venus CO₂ atmosphere preset).', color:'#ffe600',
+    state:{ stellar:'G', pDistance:0.72, pRadius:0.95, pMass:0.815,pAlbedo:0.75, pTau:50.0, core:'silicate', label:'VENUS SYSTEM' } },
   { id:'trappist', name:'TRAPPIST-1e',      badge:'M-Type', stellarClass:'M-Type (Red Dwarf)',flux:0.66, radius:0.92, desc:'Candidate in an ultra-cool dwarf system. Radius and orbit are observed; albedo and τ are estimated.', color:'#ff6a30',
     state:{ stellar:'M', pDistance:0.029,pRadius:0.92, pMass:0.69, pAlbedo:0.30, pTau:1.20, core:'silicate', label:'TRAPPIST-1E' } },
   { id:'kepler452',name:'Kepler-452b',      badge:'G-Type', stellarClass:'G-Type (Aged Main)',flux:1.10, radius:1.63, desc:'Super-Earth orbiting a sun-like star. Radius is observed; mass is estimated. Albedo and τ are assumed.', color:'#6aa8ff',
@@ -863,8 +863,9 @@ function checkCalibrationRange() {
 
   // Kopparapu polynomial valid ~2500-7000K
   if (teff < 2600 || teff > 7200) warnings.push('Stellar temperature outside Kopparapu polynomial range (2500–7000 K)');
-  // Optical depth extremes
-  if (tau > 12) warnings.push('Optical depth > 12 exceeds typical planetary values');
+  // Optical depth extremes: the reduced model is calibrated for τ ∈ [0, 50]
+  // (see scientific-contract §6, "Optical depth (reduced) 0.00–50.0").
+  if (tau > 50) warnings.push('Optical depth > 50 exceeds the reduced model\'s calibrated range');
   if (tau < 0.01 && tau > 0) warnings.push('Near-zero optical depth: model treats as vacuum');
   // Albedo edge
   if (alb > 0.9) warnings.push('Albedo > 0.9: approaching perfect reflector (physically implausible)');
