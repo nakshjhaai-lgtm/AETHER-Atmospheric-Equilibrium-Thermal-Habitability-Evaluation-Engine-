@@ -11,6 +11,7 @@ import { QHFSolver } from './solvers/qhf.js';
 
 import { ModeController } from './ui/mode-controller.js';
 import { ResultRenderer } from './ui/result-renderer.js';
+import { $, $$ } from './ui/dom.js';
 import { bindModeSelector, bindAtmosphereControls, bindBiologyTarget, bindScenarioEditor, renderQHFResult } from './ui/integration.js';
 import { ShaderEngine } from './shader-engine.js';
 import { AudioEngine, freqToNote } from './audio-engine.js';
@@ -63,9 +64,7 @@ const state = {
   _dirty: { ui:true, lastUI:0, lastPhysics:0, lastScope:0, _lastClimate:null }
 };
 
-// DOM refs (cached at startup)
-const $ = (s, r=document) => r.querySelector(s);
-const $$ = (s, r=document) => [...r.querySelectorAll(s)];
+// DOM refs (cached at startup). `$` and `$$` come from js/ui/dom.js.
 const refs = {};
 
 let shader, audio, running = true;

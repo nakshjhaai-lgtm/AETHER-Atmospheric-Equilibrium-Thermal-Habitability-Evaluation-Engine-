@@ -2,6 +2,8 @@
 // Wires ModeController, atmosphere controls, biology target, scenario editor
 
 import { ScenarioValidator } from '../schema/validate-scenario.js';
+import { ATMOSPHERE_PRESETS } from '../schema/constants.js';
+import { $$ } from './dom.js';
 
 
 export function bindModeSelector(modeController, state) {
