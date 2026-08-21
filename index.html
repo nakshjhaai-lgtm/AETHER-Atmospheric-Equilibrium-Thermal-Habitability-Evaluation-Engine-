@@ -100,7 +100,7 @@
         </div>
       </div>
 
-      <p class="onboarding-note"><b>What does "habitable" mean here?</b> AETHER uses simplified 1D grey-atmosphere physics to estimate whether liquid water <i>could</i> exist on a planet's surface. In Advanced and Expert modes it also models atmospheric gas composition, magnetic-field shielding, UV/radiation estimates, and habitability heuristics for eight biological targets. It is <b>not</b> a general-circulation model and it is <b>not</b> a detector or probability-of-life calculator — all assessments are illustrative, not authoritative.</p>
+      <p class="onboarding-note"><b>What does "habitable" mean here?</b> AETHER uses simplified 1D grey-atmosphere physics to estimate whether liquid water <i>could</i> exist on a planet's surface. In Advanced and Expert modes it also models atmospheric gas composition and habitability heuristics for eight biological targets; magnetic-field and UV inputs are tracked but not yet surfaced in the output. It is <b>not</b> a general-circulation model and it is <b>not</b> a detector or probability-of-life calculator — all assessments are illustrative, not authoritative.</p>
 
       <button class="btn btn--primary onboarding-go" id="btn-start-exploring" type="button">Start Exploring</button>
     </div>
@@ -386,7 +386,7 @@
               </div>
               <div class="model-limitation">
                 <span class="model-limitation__icon">i</span>
-                <span class="model-limitation__text">Climate regime is based on surface temperature only. Atmospheric composition, pressure, water availability, UV radiation, magnetic fields, and geological activity are not modeled.</span>
+                <span class="model-limitation__text">Climate regime is based on surface temperature and optical depth. Water availability, UV radiation, magnetic fields, and geological activity are not modeled; atmospheric gas composition and pressure are modeled in Advanced/Expert modes.</span>
               </div>
             </div>
           </div>
@@ -766,7 +766,7 @@
           <div class="eq__body">
             <h5>Eddington Approximation: Surface Temperature</h5>
             <p class="formula">T<sub>s</sub><sup>4</sup> = (¾) T<sub>eq</sub><sup>4</sup> · ( τ<sub>s</sub> + ⅔ )</p>
-            <p class="eq__desc">τ (optical depth) is a dimensionless measure of how strongly the atmosphere absorbs outgoing infrared radiation. This implementation treats the atmosphere as a grey, plane-parallel layer and does not model individual gases.</p>
+            <p class="eq__desc">τ (optical depth) is a dimensionless measure of how strongly the atmosphere absorbs outgoing infrared radiation. In the reduced model the atmosphere is treated as a grey, plane-parallel layer with a single optical depth; individual gases are modeled separately in Advanced/Expert mode.</p>
             <div class="eq__vars">
               <div><code>T<sub>s</sub></code>: Surface temperature (K)</div>
               <div><code>T<sub>eq</sub></code>: Equilibrium temperature from Eq. 01 (K)</div>
@@ -831,7 +831,7 @@
       </div>
       <div class="model-limitation eq-limitation">
         <span class="model-limitation__icon">!</span>
-        <span class="model-limitation__text"><b>Model Limitations:</b> AETHER uses a 1D grey-atmosphere with fixed albedo input. It does not model: individual atmospheric gases, convection, cloud feedback, magnetic fields, tidal locking, rotation, seasonal variation, geological cycling, water availability, UV radiation, or stellar flares. Results are educational approximations, not predictive science.</span>
+        <span class="model-limitation__text"><b>Model Limitations:</b> AETHER's reduced model uses a 1D grey-atmosphere with fixed albedo input and a single optical-depth parameter; the Advanced/Expert models add gas-specific opacity and a radiative-convective column. It does not model: convection, cloud feedback, magnetic fields, tidal locking, rotation, seasonal variation, geological cycling, water availability, UV radiation, or stellar flares. Results are educational approximations, not predictive science.</span>
       </div>
     </div>
   </aside>

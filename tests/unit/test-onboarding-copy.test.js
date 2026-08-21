@@ -18,8 +18,9 @@ describe('P0-4: onboarding copy matches capabilities', () => {
   it('notes the actual Advanced/Expert capabilities', () => {
     const note = html.slice(html.indexOf('onboarding-note'), html.indexOf('onboarding-note') + 900);
     expect(note).toMatch(/atmospheric gas composition/);
-    expect(note).toMatch(/magnetic-field/);
     expect(note).toMatch(/biological targets/);
+    // Magnetic-field / UV are described honestly as tracked but not yet surfaced.
+    expect(note).toMatch(/not yet surfaced/);
   });
 
   it('keeps the honest "not a GCM / not a probability-of-life calculator" framing', () => {
