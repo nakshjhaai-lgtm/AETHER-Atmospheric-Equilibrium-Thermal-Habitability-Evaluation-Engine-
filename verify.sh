@@ -33,9 +33,15 @@ run_required "npm test" npm test
 run_required "npm run lint" npm run lint
 
 # --- 3. Python backend tests ---
-if command -v python3 >/dev/null 2>&1; then
-  step "pytest python/validation/"
-  if python3 -m pytest python/validation/ -v; then
+# Prefer the project venv (.venv) if present; otherwise fall back to python3.
+if [ -x "$ROOT/.venv/bin/python" ]; then
+  PY="$ROOT/.venv/bin/python"
+else
+  PY="$(command -v python3 || true)"
+fi
+if [ -n "$PY" ]; then
+  step "pytest python/validation/  (python: $PY)"
+  if "$PY" -m py_compile python/api/main.py && "$PY" -m pytest python/validation/ -v; then
     :
   else
     echo "[verify] FAILED: pytest"
