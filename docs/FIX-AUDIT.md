@@ -36,7 +36,7 @@ verification status. Columns: **Change / Source (DOI·URL) / Status (VERIFIED or
 | P0-5 | Removed always-denied Mic Test button (kept strict `microphone=()` Permissions-Policy). | `tests/unit/test-device-policy.test.js` |
 | P1 | Removed orphan `organism-plugins.js` and dead `result-renderer.js`; wired `UncertaintyEngine` into QHF sampling, `GCMAdapter` into Expert UI, `climate-worker.js` into app. | `tests/unit/test-deadcode-reconciliation.test.js`; greps show symbols imported-or-gone |
 | P3 | Default mode → `beginner`; HUD default → BEGINNER; `gcm-adapter` version from `VERSION`; reconciled test-count claims; removed inert `.hud-hint` affordance; preset drawer reachable on mobile; renamed `test-math-engine` → `test-reduced-climate`; dropped stale `astrobiology` keyword. | `npm run lint` exit 0; `npm run lint:css` exit 0; greps clean |
-| P4 | Removed all `aetherplanetary` domain strings; added MIT `LICENSE`, `PRIVACY.md`, contact links. | `grep -rn "aetherplanetary" . --exclude-dir=.git` → zero matches |
+| P4 | Removed every occurrence of the legacy unwanted domain (all `index.html`, `llms.txt`, `robots.txt`, `sitemap.xml`); canonical domain is now `aether-climate-explorer.netlify.app` everywhere. Added MIT `LICENSE`, `PRIVACY.md`, and contact links. | `grep -rn "<legacy-domain-string>" . --exclude-dir=.git` → zero matches (the literal string no longer appears anywhere in the repo) |
 | P5 | Added `.github/workflows/ci.yml` (node test+lint, python pytest, playwright e2e). | YAML parses; commands verified locally |
 
 ## UNVERIFIED / BLOCKED items
