@@ -217,7 +217,19 @@ uvicorn python.api.main:app --reload --port 8000
 
 ## License
 
-See repository for license details.
+AETHER is released under the [MIT License](LICENSE).
+
+## Privacy
+
+AETHER runs entirely in your browser. It has no accounts, no analytics, no
+cookies, and no network calls that transmit your activity. It only stores small
+UI preferences in `localStorage`/`sessionStorage` and loads Three.js and Google
+Fonts from CDNs. See the [Privacy Policy](PRIVACY.md).
+
+## Contact
+
+For questions or to report a problem, open a GitHub issue:
+<https://github.com/nakshjhaai-lgtm/AETHER-Atmospheric-Equilibrium-Thermal-Habitability-Evaluation-Engine-/issues>
 
 ---
 
