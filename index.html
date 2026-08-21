@@ -100,7 +100,7 @@
         </div>
       </div>
 
-      <p class="onboarding-note"><b>What does "habitable" mean here?</b> AETHER estimates whether liquid water <i>could</i> exist on a planet's surface based on temperature. It does not model atmosphere composition, magnetic fields, UV radiation, or biological factors.</p>
+      <p class="onboarding-note"><b>What does "habitable" mean here?</b> AETHER uses simplified 1D grey-atmosphere physics to estimate whether liquid water <i>could</i> exist on a planet's surface. In Advanced and Expert modes it also models atmospheric gas composition, magnetic-field shielding, UV/radiation estimates, and habitability heuristics for eight biological targets. It is <b>not</b> a general-circulation model and it is <b>not</b> a detector or probability-of-life calculator — all assessments are illustrative, not authoritative.</p>
 
       <button class="btn btn--primary onboarding-go" id="btn-start-exploring" type="button">Start Exploring</button>
     </div>
@@ -643,13 +643,8 @@
                 <span>Enable Gyroscope</span>
                 <i id="gyro-status">Off</i>
               </button>
-              <button class="action-btn" id="btn-mic" type="button">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0014 0M12 18v3"/></svg>
-                <span>Mic Test</span>
-                <i id="mic-status">Idle</i>
-              </button>
             </div>
-            <p class="sensor-note">Gyroscope: optional tilt-to-rotate camera. Mouse/touch always works without it. Mic test: checks browser audio capability only: does not record or transmit audio.</p>
+            <p class="sensor-note">Gyroscope: optional tilt-to-rotate camera. Mouse/touch always works without it. Audio capability is verified via the Web Audio synthesizer below (the site's Permissions-Policy keeps camera and microphone disabled).</p>
           </div>
 
           <div class="card">

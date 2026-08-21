@@ -167,7 +167,6 @@ function cacheRefs() {
   refs.specPath = $('#spectrum-path'); refs.specLine = $('#spectrum-line');
   refs.btnTelemetry = $('#btn-telemetry');
   refs.btnGyro = $('#btn-gyro'); refs.gyroStatus = $('#gyro-status');
-  refs.btnMic = $('#btn-mic'); refs.micStatus = $('#mic-status');
   refs.btnAudio = $('#btn-audio'); refs.audioState = $('#audio-state');
   refs.audioSwitch = refs.btnAudio.querySelector('.toggle-switch');
   refs.sliders = {
@@ -447,15 +446,10 @@ function bindToggles() {
   });
 
   refs.btnGyro.addEventListener('click', requestGyroPermission);
-  refs.btnMic.addEventListener('click', async () => {
-    try {
-      refs.micStatus.textContent = 'REQUEST';
-      if (!navigator.mediaDevices?.getUserMedia) { refs.micStatus.textContent='UNSUPPORTED'; return; }
-      const stream = await navigator.mediaDevices.getUserMedia({audio:true});
-      refs.micStatus.textContent = 'LIVE'; refs.btnMic.classList.add('is-active');
-      setTimeout(()=>{ stream.getTracks().forEach(t=>t.stop()); refs.micStatus.textContent='PASS'; refs.btnMic.classList.remove('is-active'); }, 3000);
-    } catch(_) { refs.micStatus.textContent = 'DENIED'; }
-  });
+  // NOTE (P0-5): The former "Mic Test" button was removed. The site's Permissions-Policy
+  // (netlify.toml) sets `microphone=()` so a getUserMedia({audio:true}) request was always
+  // denied. Keeping the button would over-claim device access; audio capability is already
+  // verified by the Web Audio synthesizer toggle. The strict camera/microphone denial is retained.
 }
 
 function bindChips() {
